@@ -27,7 +27,7 @@
         
         /* Loading Overlay */
         #loadingOverlay {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999;
+            position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -38,9 +38,9 @@
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay">
-        <div class="spinner mb-4"></div>
-        <h2 class="text-xl font-bold text-blue-800">กำลังเชื่อมต่อฐานข้อมูล Cloud...</h2>
-        <p class="text-sm text-gray-500">กรุณารอสักครู่</p>
+        <div class="spinner mb-4" id="loadingSpinner"></div>
+        <h2 class="text-xl font-bold text-blue-800" id="loadingText">กำลังเชื่อมต่อฐานข้อมูล Cloud...</h2>
+        <p class="text-sm text-gray-500 mt-2" id="loadingSubtext">กรุณารอสักครู่ หากโหลดนานเกินไป ระบบจะตรวจสอบข้อผิดพลาดอัตโนมัติ</p>
     </div>
 
     <!-- Header -->
@@ -59,11 +59,11 @@
     <main class="container mx-auto p-4 mt-2 grid grid-cols-1 lg:grid-cols-12 gap-4" id="mainContent" style="display: none;">
         
         <!-- Tab Navigation -->
-        <div class="lg:col-span-12 flex border-b-2 border-gray-300">
-            <button onclick="window.switchTab('detail')" id="tabDetailBtn" class="py-2 px-6 border-b-4 border-blue-600 text-blue-700 font-bold focus:outline-none flex items-center gap-2 bg-white rounded-t-lg transition">
+        <div class="lg:col-span-12 flex border-b-2 border-gray-300 overflow-x-auto custom-scrollbar">
+            <button onclick="window.switchTab('detail')" id="tabDetailBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-blue-600 text-blue-700 font-bold focus:outline-none flex items-center gap-2 bg-white rounded-t-lg transition">
                 <i class="fa-solid fa-list-check"></i> รายละเอียดโครงการ
             </button>
-            <button onclick="window.switchTab('summary')" id="tabSummaryBtn" class="py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
+            <button onclick="window.switchTab('summary')" id="tabSummaryBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
                 <i class="fa-solid fa-table-list"></i> สรุปภาพรวมทั้งหมด
             </button>
         </div>
@@ -92,12 +92,32 @@
             <!-- ส่วนที่ 1: แบบฟอร์มกรอกข้อมูล (ซ้าย) -->
             <div class="lg:col-span-4 space-y-4">
                 <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-blue-600">
-                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-blue-600"></i> ข้อมูลสัญญาหลัก</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-blue-600"></i> ข้อมูลสัญญาหลัก</h2>
+                        <button type="button" onclick="window.exportCurrentProjectCSV()" class="bg-emerald-600 text-white px-3 py-1.5 rounded shadow hover:bg-emerald-700 transition text-xs flex items-center gap-2 font-semibold">
+                            <i class="fa-solid fa-file-csv"></i> Export โครงการนี้
+                        </button>
+                    </div>
                     
                     <form id="contractForm" class="space-y-4" onsubmit="event.preventDefault();">
                         <div>
-                            <label class="block text-sm font-semibold mb-1">ชื่อโครงการ / สัญญา</label>
+                            <label class="block text-sm font-semibold mb-1">ชื่อโครงการ</label>
                             <input type="text" id="projectName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" oninput="window.triggerSave()">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">เลขที่/ชื่อสัญญา</label>
+                                <input type="text" id="contractName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุ..." oninput="window.triggerSave()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">ผู้ควบคุมงาน</label>
+                                <input type="text" id="supervisorName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุ..." oninput="window.triggerSave()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">วงเงินสัญญา (฿)</label>
+                                <input type="number" id="contractAmount" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุ..." oninput="window.triggerSave()">
+                            </div>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -128,6 +148,13 @@
                                 <label class="block text-sm font-semibold mb-1 text-emerald-600">ผลงานวันนี้ (%)</label>
                                 <input type="number" id="currentActual" class="w-full border p-2 rounded focus:ring focus:ring-emerald-200 bg-emerald-50" placeholder="ระบุ %" step="0.01" oninput="window.updateDashboard(); window.triggerSave();">
                             </div>
+                        </div>
+
+                        <!-- ปุ่มประมวลผลและบันทึกข้อมูล -->
+                        <div class="mt-2 pt-4 border-t border-blue-100">
+                            <button type="button" id="processBtn" onclick="window.processAndUpdate()" class="w-full bg-blue-700 text-white px-4 py-3 rounded-lg shadow-md hover:bg-blue-800 transition flex items-center justify-center gap-2 font-bold text-base">
+                                <i class="fa-solid fa-bolt"></i> ประมวลผล อัปเดตกราฟ และบันทึกข้อมูล
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -232,7 +259,7 @@
         <div id="viewSummary" class="lg:col-span-12 hidden w-full">
             <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-indigo-600">
                 <div class="flex justify-between items-center mb-4 border-b pb-3">
-                    <h2 class="text-xl font-bold flex items-center gap-2 text-indigo-800"><i class="fa-solid fa-table-list"></i> สรุปสถานะทุกโครงการ (Dashboard Overview)</h2>
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-indigo-800"><i class="fa-solid fa-table-list"></i> สรุปสถานะทุกโครงการ</h2>
                     <button onclick="window.exportSummaryCSV()" class="bg-emerald-600 text-white px-4 py-2 rounded shadow hover:bg-emerald-700 transition text-sm flex items-center gap-2 font-semibold">
                         <i class="fa-solid fa-file-csv"></i> Export Excel
                     </button>
@@ -244,6 +271,7 @@
                             <tr class="bg-indigo-50 text-indigo-900 border-b border-indigo-100">
                                 <th class="p-3 font-bold text-center w-12">No.</th>
                                 <th class="p-3 font-bold">ชื่อโครงการ / สัญญา</th>
+                                <th class="p-3 font-bold text-right">วงเงินสัญญา</th>
                                 <th class="p-3 font-bold text-center">วันสิ้นสุด</th>
                                 <th class="p-3 font-bold text-center">แผน (%)</th>
                                 <th class="p-3 font-bold text-center">จริง (%)</th>
@@ -278,6 +306,34 @@
         </div>
     </div>
 
+    <!-- สคริปต์ช่วยดักจับ Error กรณีเปิดแบบออฟไลน์ (file://) หรือโหลดไม่ได้ -->
+    <script>
+        setTimeout(function() {
+            var overlay = document.getElementById('loadingOverlay');
+            if (overlay && overlay.style.display !== 'none') {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('loadingText').innerText = "พบปัญหาการโหลดระบบ";
+                document.getElementById('loadingText').classList.replace('text-blue-800', 'text-red-600');
+                
+                document.getElementById('loadingSubtext').innerHTML = `
+                    <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded text-left text-red-800 text-sm max-w-md shadow-sm">
+                        <b>สาเหตุที่เป็นไปได้:</b>
+                        <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-700">
+                            <li>คุณเปิดไฟล์นี้ด้วยวิธีดับเบิลคลิก (file://) เบราว์เซอร์บางตัวไม่อนุญาตให้เชื่อมต่อฐานข้อมูล แนะนำให้อัปโหลดขึ้น Netlify หรือ GitHub Pages ก่อน</li>
+                            <li>ไม่ได้เปิดใช้งาน <b>Authentication (Anonymous)</b> ใน Firebase Console</li>
+                            <li>ไม่ได้ตั้งค่า <b>Rules</b> ใน Firestore Database ให้อนุญาตการอ่านเขียน</li>
+                        </ul>
+                        <div class="mt-4 flex justify-center">
+                            <button onclick="document.getElementById('loadingOverlay').style.display='none'; document.getElementById('mainContent').style.display='grid';" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-900 transition">
+                                ข้ามข้อความนี้ (ลองใช้งานแบบจำลอง)
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }, 6000); // หากโหลดเกิน 6 วินาที จะแสดงข้อความแจ้งเตือน
+    </script>
+
     <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -305,6 +361,7 @@
         let sCurveInstance = null;
         let generatedPeriods = []; 
         let userInputsCache = { plan: {}, act: {}, checklist: {} };
+        window.userInputsCache = userInputsCache;
         let projects = [];
         let activeProjectId = null;
         let saveTimeout = null;
@@ -323,8 +380,7 @@
             } catch (error) {
                 console.error("Auth Error:", error);
                 document.getElementById('connectionStatus').innerText = "สถานะ: เชื่อมต่อล้มเหลว";
-                document.getElementById('loadingOverlay').innerHTML = `<h2 class='text-red-600 font-bold'>ไม่สามารถเชื่อมต่อฐานข้อมูลได้</h2><p class='mt-2'>กรุณาตรวจสอบการตั้งค่า Firebase</p>`;
-                return;
+                return; // ตัวแจ้งเตือนแบบ fallback จะทำงานอัตโนมัติหาก error
             }
 
             onAuthStateChanged(auth, (user) => {
@@ -349,29 +405,41 @@
                     loadedProjects.push({ id: doc.id, ...doc.data() });
                 });
 
-                // เรียงลำดับตามวันที่สร้าง ให้โครงการใหม่ลงไปอยู่ล่าง
+                // เรียงลำดับตามวันที่สร้าง
                 loadedProjects.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
                 projects = loadedProjects;
 
+                // แก้ไขปัญหา UI ค้าง: สั่งปิดหน้า loading ทันทีที่ดึงข้อมูลสำเร็จ (ไม่ว่าจะมีหรือไม่มีข้อมูล)
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) overlay.style.display = 'none';
+                document.getElementById('mainContent').style.display = 'grid';
+
                 if (projects.length === 0) {
+                    // หากยังไม่มีข้อมูลเลย ให้สร้างโครงการเริ่มต้น 1 อัน
                     window.createNewProject(true);
                 } else {
                     renderProjectSelector();
-                    window.renderSummaryTable(); // อัปเดตตารางสรุปเสมอ
+                    window.renderSummaryTable(); 
                     
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    document.getElementById('mainContent').style.display = 'grid';
-
                     if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
                         window.switchProject(projects[0].id);
                     } else {
-                        const proj = projects.find(p => p.id === activeProjectId);
-                        if(proj) loadProjectDataToUI(proj);
+                        // ป้องกันการลบตัวอักษรระหว่างที่ผู้ใช้กำลังพิมพ์
+                        const activeEl = document.activeElement;
+                        const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+                        
+                        if (!isTyping) {
+                            const proj = projects.find(p => p.id === activeProjectId);
+                            if(proj) loadProjectDataToUI(proj);
+                        }
                     }
                 }
             }, (error) => {
                 console.error("Error fetching data: ", error);
-                document.getElementById('loadingOverlay').innerHTML = `<h2 class='text-red-600 font-bold'>สิทธิ์การเข้าถึงถูกปฏิเสธ</h2><p class='mt-2 text-sm'>โปรดตรวจสอบ Firestore Rules ใน Firebase Console</p>`;
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('loadingText').innerText = "สิทธิ์การเข้าถึงถูกปฏิเสธ";
+                document.getElementById('loadingText').classList.replace('text-blue-800', 'text-red-600');
+                document.getElementById('loadingSubtext').innerHTML = `โปรดตรวจสอบการตั้งค่า <b>Rules</b> ของ Firestore ใน Firebase Console<br><br><span class="text-xs text-gray-400">${error.message}</span>`;
             });
         }
 
@@ -386,13 +454,16 @@
                 const proj = projects.find(p => p.id === activeProjectId);
                 const projData = {
                     name: document.getElementById('projectName').value || 'โครงการไม่มีชื่อ',
+                    contractName: document.getElementById('contractName').value || '',
+                    supervisorName: document.getElementById('supervisorName').value || '',
+                    contractAmount: document.getElementById('contractAmount').value || '',
                     startDate: document.getElementById('startDate').value,
                     duration: document.getElementById('contractDuration').value,
                     extensionDays: document.getElementById('extensionDays').value,
                     currentActual: document.getElementById('currentActual').value,
-                    planData: { ...userInputsCache.plan },
-                    actData: { ...userInputsCache.act },
-                    checklist: JSON.parse(JSON.stringify(userInputsCache.checklist)),
+                    planData: { ...window.userInputsCache.plan },
+                    actData: { ...window.userInputsCache.act },
+                    checklist: JSON.parse(JSON.stringify(window.userInputsCache.checklist)),
                     updatedAt: new Date().toISOString(),
                     createdAt: proj ? (proj.createdAt || new Date().toISOString()) : new Date().toISOString()
                 };
@@ -408,13 +479,84 @@
             }, 1000);
         };
 
+        window.processAndUpdate = async function() {
+            const btn = document.getElementById('processBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังประมวลผล...';
+            btn.disabled = true;
+
+            // อัปเดตกราฟบนจอ
+            window.handleDateChange();
+
+            // บันทึกแบบทันทีทันใด
+            clearTimeout(saveTimeout);
+            if (!activeProjectId) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            document.getElementById('saveIndicator').innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-500"></i> กำลังบันทึก...';
+            
+            const proj = projects.find(p => p.id === activeProjectId);
+            const projData = {
+                name: document.getElementById('projectName').value || 'โครงการไม่มีชื่อ',
+                contractName: document.getElementById('contractName').value || '',
+                supervisorName: document.getElementById('supervisorName').value || '',
+                contractAmount: document.getElementById('contractAmount').value || '',
+                startDate: document.getElementById('startDate').value,
+                duration: document.getElementById('contractDuration').value,
+                extensionDays: document.getElementById('extensionDays').value,
+                currentActual: document.getElementById('currentActual').value,
+                planData: { ...window.userInputsCache.plan },
+                actData: { ...window.userInputsCache.act },
+                checklist: JSON.parse(JSON.stringify(window.userInputsCache.checklist)),
+                updatedAt: new Date().toISOString(),
+                createdAt: proj ? (proj.createdAt || new Date().toISOString()) : new Date().toISOString()
+            };
+
+            try {
+                const docRef = doc(db, projectsCollectionPath, activeProjectId);
+                await setDoc(docRef, projData, { merge: true });
+                document.getElementById('saveIndicator').innerHTML = '<i class="fa-solid fa-cloud-check text-emerald-500"></i> บันทึกแล้ว';
+                
+                btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> ประมวลผลและบันทึกข้อมูลสำเร็จ!';
+                btn.classList.replace('bg-blue-700', 'bg-emerald-600');
+                btn.classList.replace('hover:bg-blue-800', 'hover:bg-emerald-700');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.replace('bg-emerald-600', 'bg-blue-700');
+                    btn.classList.replace('hover:bg-emerald-700', 'hover:bg-blue-800');
+                    btn.disabled = false;
+                }, 2500);
+            } catch (error) {
+                console.error("Error saving document: ", error);
+                document.getElementById('saveIndicator').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-500"></i> บันทึกไม่สำเร็จ';
+                
+                btn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> เกิดข้อผิดพลาดในการบันทึก';
+                btn.classList.replace('bg-blue-700', 'bg-red-600');
+                btn.classList.replace('hover:bg-blue-800', 'hover:bg-red-700');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.replace('bg-red-600', 'bg-blue-700');
+                    btn.classList.replace('hover:bg-red-700', 'hover:bg-blue-800');
+                    btn.disabled = false;
+                }, 3000);
+            }
+        };
+
         window.createNewProject = async function(isInitial = false) {
             const newId = 'proj_' + Date.now();
             let startDate = new Date();
             if (isInitial) startDate.setDate(startDate.getDate() - 75);
             
             const newProject = {
-                name: isInitial ? 'งานวางท่อจ่ายน้ำ ถนนสุขุมวิท' : `โครงการใหม่ ${projects.length + 1}`,
+                name: isInitial ? 'โครงการวางท่อจ่ายน้ำ ถนนสุขุมวิท' : `โครงการใหม่ ${projects.length + 1}`,
+                contractName: isInitial ? 'สญ. 123/2568' : '',
+                supervisorName: isInitial ? 'นายสมชาย ใจดี' : '',
+                contractAmount: isInitial ? '1500000' : '',
                 startDate: startDate.toISOString().split('T')[0],
                 duration: "150",
                 extensionDays: "0",
@@ -430,8 +572,6 @@
                 const docRef = doc(db, projectsCollectionPath, newId);
                 await setDoc(docRef, newProject);
                 activeProjectId = newId;
-                
-                // หากเพิ่มโครงการขณะอยู่หน้าสรุป ให้เด้งกลับไปหน้ารายละเอียด
                 window.switchTab('detail');
             } catch (error) {
                 console.error("Error creating project: ", error);
@@ -480,19 +620,22 @@
 
         function loadProjectDataToUI(proj) {
             document.getElementById('projectName').value = proj.name || '';
+            document.getElementById('contractName').value = proj.contractName || '';
+            document.getElementById('supervisorName').value = proj.supervisorName || '';
+            document.getElementById('contractAmount').value = proj.contractAmount || '';
             document.getElementById('startDate').value = proj.startDate || '';
             document.getElementById('contractDuration').value = proj.duration || 150;
             document.getElementById('extensionDays').value = proj.extensionDays || 0;
             document.getElementById('currentActual').value = proj.currentActual || '';
 
-            userInputsCache.plan = proj.planData ? { ...proj.planData } : {};
-            userInputsCache.act = proj.actData ? { ...proj.actData } : {};
-            userInputsCache.checklist = proj.checklist ? JSON.parse(JSON.stringify(proj.checklist)) : {};
+            window.userInputsCache.plan = proj.planData ? { ...proj.planData } : {};
+            window.userInputsCache.act = proj.actData ? { ...proj.actData } : {};
+            window.userInputsCache.checklist = proj.checklist ? JSON.parse(JSON.stringify(proj.checklist)) : {};
 
             window.handleDateChange();
         }
 
-        // --- 6. ฟังก์ชันจัดการระบบ Tabs และหน้าสรุปงาน (New Feature) ---
+        // --- 6. ฟังก์ชันจัดการระบบ Tabs และหน้าสรุปงาน ---
         window.switchTab = function(tabName) {
             const viewDetail = document.getElementById('viewDetail');
             const viewSummary = document.getElementById('viewSummary');
@@ -503,7 +646,6 @@
                 viewDetail.classList.add('hidden');
                 viewSummary.classList.remove('hidden');
                 
-                // สลับสีปุ่ม Tab
                 tabSummaryBtn.classList.replace('border-transparent', 'border-indigo-600');
                 tabSummaryBtn.classList.replace('text-gray-500', 'text-indigo-700');
                 tabSummaryBtn.classList.remove('hover:bg-gray-50');
@@ -517,7 +659,6 @@
                 viewSummary.classList.add('hidden');
                 viewDetail.classList.remove('hidden');
                 
-                // สลับสีปุ่ม Tab
                 tabDetailBtn.classList.replace('border-transparent', 'border-blue-600');
                 tabDetailBtn.classList.replace('text-gray-500', 'text-blue-700');
                 tabDetailBtn.classList.remove('hover:bg-gray-50');
@@ -528,7 +669,6 @@
             }
         };
 
-        // ฟังก์ชันคำนวณข้อมูล 1 โครงการ (เพื่อนำไปแสดงในตารางสรุป)
         function getProjectSummaryData(proj) {
             if (!proj.startDate) return null;
             
@@ -546,7 +686,6 @@
             let remainingDays = totalDays - elapsedDays;
             let overdueDays = elapsedDays > totalDays ? elapsedDays - totalDays : 0;
             
-            // คำนวณแผนสะสมตามช่วงเวลา
             let periods = getProjectPeriods(startDate, endDate);
             let expectedPlan = getExpectedPlan(proj, periods, checkDate);
             let currentActual = proj.currentActual !== "" && proj.currentActual !== undefined ? parseFloat(proj.currentActual) : 0;
@@ -554,7 +693,6 @@
             let variance = (currentActual - expectedPlan).toFixed(2);
             let varStr = variance > 0 ? `+${variance}` : variance;
             
-            // สถานะโครงการ
             let status = "ปกติ";
             let statusColor = "bg-emerald-100 text-emerald-700 border border-emerald-300";
             let icon = "fa-circle-check";
@@ -580,6 +718,9 @@
             return {
                 id: proj.id,
                 name: proj.name,
+                contractName: proj.contractName,
+                supervisorName: proj.supervisorName,
+                contractAmount: proj.contractAmount ? Number(proj.contractAmount).toLocaleString('th-TH') : '-',
                 startDate: proj.startDate,
                 endDate: endDate.toISOString().split('T')[0],
                 plan: expectedPlan.toFixed(2),
@@ -591,7 +732,6 @@
             };
         }
 
-        // ผู้ช่วยคำนวณเดือนแบบไม่ต้องวาดกราฟ
         function getProjectPeriods(startDate, endDate) {
             let periods = [];
             let monthIndex = 1;
@@ -610,7 +750,6 @@
             return periods;
         }
 
-        // ผู้ช่วยหาสัดส่วนแผนงาน
         function getExpectedPlan(proj, periods, checkDate) {
             let timePoints = [new Date(proj.startDate).getTime()];
             let planValues = [0];
@@ -662,12 +801,15 @@
                 let tr = document.createElement('tr');
                 tr.className = "hover:bg-indigo-50 transition-colors";
                 
-                // กำหนดสีตัวอักษรของ Variance
                 let varColor = parseFloat(sum.variance) < 0 ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold';
                 
                 tr.innerHTML = `
                     <td class="p-3 border-b text-center text-gray-500">${index++}</td>
-                    <td class="p-3 border-b font-semibold text-indigo-900 cursor-pointer hover:underline" onclick="window.switchProject('${sum.id}'); window.switchTab('detail');">${sum.name}</td>
+                    <td class="p-3 border-b font-semibold text-indigo-900 cursor-pointer hover:underline" onclick="window.switchProject('${sum.id}'); window.switchTab('detail');">
+                        ${sum.name}
+                        <div class="text-[10px] text-gray-500 font-normal mt-0.5">สัญญา: ${sum.contractName || '-'} | ผคบ: ${sum.supervisorName || '-'}</div>
+                    </td>
+                    <td class="p-3 border-b text-right text-gray-700">${sum.contractAmount}</td>
                     <td class="p-3 border-b text-center text-gray-600">${formatDateShort(new Date(sum.endDate))}</td>
                     <td class="p-3 border-b text-center text-gray-600">${sum.plan}</td>
                     <td class="p-3 border-b text-center font-semibold">${sum.actual}</td>
@@ -689,18 +831,18 @@
             document.getElementById('summaryUpdateTime').innerText = new Date().toLocaleString('th-TH');
         };
 
-        // ฟังก์ชัน Export CSV
         window.exportSummaryCSV = function() {
             if (projects.length === 0) return alert("ไม่มีข้อมูลให้ Export");
             
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // รองรับภาษาไทยใน Excel
-            csvContent += "ลำดับ,ชื่อโครงการ,วันที่สิ้นสุดสัญญา,แผนงานสะสม(%),ผลงานจริง(%),ส่วนต่าง,สถานะ\r\n";
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "ลำดับ,ชื่อโครงการ,เลขที่/ชื่อสัญญา,ผู้ควบคุมงาน,วงเงินสัญญา(บาท),วันที่สิ้นสุดสัญญา,แผนงานสะสม(%),ผลงานจริง(%),ส่วนต่าง,สถานะ\r\n";
 
             let index = 1;
             projects.forEach(proj => {
                 const sum = getProjectSummaryData(proj);
                 if(sum) {
-                    csvContent += `${index++},"${sum.name}","${formatDateFull(new Date(sum.endDate))}",${sum.plan},${sum.actual},${sum.variance},"${sum.status}"\r\n`;
+                    let cleanAmount = sum.contractAmount.replace(/,/g, ''); 
+                    csvContent += `${index++},"${sum.name}","${sum.contractName || ''}","${sum.supervisorName || ''}","${cleanAmount}","${formatDateFull(new Date(sum.endDate))}",${sum.plan},${sum.actual},${sum.variance},"${sum.status}"\r\n`;
                 }
             });
 
@@ -713,7 +855,42 @@
             document.body.removeChild(link);
         };
 
-        // --- 7. ฟังก์ชันการคำนวณกราฟและ UI สำหรับ Tab รายละเอียด (เดิม) ---
+        window.exportCurrentProjectCSV = function() {
+            if (!activeProjectId) return alert("ไม่พบข้อมูลโครงการ");
+            const proj = projects.find(p => p.id === activeProjectId);
+            if (!proj) return;
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "หัวข้อ,รายละเอียด\r\n";
+            csvContent += `ชื่อโครงการ,"${proj.name || '-'}"\r\n`;
+            csvContent += `เลขที่/ชื่อสัญญา,"${proj.contractName || '-'}"\r\n`;
+            csvContent += `ผู้ควบคุมงาน,"${proj.supervisorName || '-'}"\r\n`;
+            csvContent += `วงเงินสัญญา (บาท),"${proj.contractAmount || '-'}"\r\n`;
+            csvContent += `วันที่เริ่มงาน,"${formatDateFull(new Date(proj.startDate))}"\r\n`;
+            csvContent += `ระยะเวลา (วัน),${proj.duration || '-'}\r\n`;
+            csvContent += `วันขยายเวลา (วัน),${proj.extensionDays || '0'}\r\n`;
+            csvContent += `ผลงานวันนี้ (%),${proj.currentActual || '0'}\r\n`;
+            csvContent += "\r\n";
+            
+            csvContent += "งวดเดือนที่,วันสิ้นสุดงวด,แผนงานสะสม(%),ผลงานจริงสะสม(%)\r\n";
+            if (generatedPeriods && generatedPeriods.length > 0) {
+                generatedPeriods.forEach((period, i) => {
+                    let plan = window.userInputsCache.plan[i] !== undefined ? window.userInputsCache.plan[i] : '';
+                    let act = window.userInputsCache.act[i] !== undefined ? window.userInputsCache.act[i] : '';
+                    csvContent += `"${period.label}","${formatDateFull(period.date)}",${plan},${act}\r\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `ข้อมูลโครงการ_${proj.name || 'ไม่มีชื่อ'}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // --- 7. ฟังก์ชันการคำนวณกราฟและ UI สำหรับ Tab รายละเอียด ---
         function formatDateShort(date) { return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' }); }
         function formatDateFull(date) { return date.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
 
@@ -765,15 +942,15 @@
                 const isLast = (i === generatedPeriods.length - 1);
                 
                 let defaultPlan = '';
-                if (!userInputsCache.plan[i]) {
+                if (!window.userInputsCache.plan[i]) {
                     const progress = (i + 1) / generatedPeriods.length;
                     const curve = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
                     defaultPlan = Math.round(curve * 100);
                     if (isLast) defaultPlan = 100;
                 }
 
-                const valPlan = userInputsCache.plan[i] !== undefined ? userInputsCache.plan[i] : defaultPlan;
-                const valAct = userInputsCache.act[i] !== undefined ? userInputsCache.act[i] : '';
+                const valPlan = window.userInputsCache.plan[i] !== undefined ? window.userInputsCache.plan[i] : defaultPlan;
+                const valAct = window.userInputsCache.act[i] !== undefined ? window.userInputsCache.act[i] : '';
 
                 const row = document.createElement('div');
                 row.className = `grid grid-cols-12 gap-1 items-center p-1 rounded ${isLast ? 'bg-emerald-100 font-bold' : 'hover:bg-blue-100'}`;
@@ -781,8 +958,8 @@
                 row.innerHTML = `
                     <div class="col-span-3 text-[11px] text-center text-gray-700">${period.label}</div>
                     <div class="col-span-4 text-[10px] text-center ${isLast ? 'text-red-600' : 'text-blue-600'}">${formatDateFull(period.date)}</div>
-                    <div class="col-span-2"><input type="number" class="input-plan w-full border p-1 rounded text-center text-xs focus:ring focus:ring-blue-300" data-idx="${i}" value="${valPlan}" oninput="userInputsCache.plan['${i}'] = this.value; window.updateDashboard(); window.triggerSave();"></div>
-                    <div class="col-span-3"><input type="number" class="input-act w-full border p-1 rounded text-center text-xs focus:ring focus:ring-blue-300" data-idx="${i}" value="${valAct}" placeholder="-" oninput="userInputsCache.act['${i}'] = this.value; window.updateDashboard(); window.triggerSave();"></div>
+                    <div class="col-span-2"><input type="number" class="input-plan w-full border p-1 rounded text-center text-xs focus:ring focus:ring-blue-300" data-idx="${i}" value="${valPlan}" oninput="window.userInputsCache.plan['${i}'] = this.value; window.updateDashboard(); window.triggerSave();"></div>
+                    <div class="col-span-3"><input type="number" class="input-act w-full border p-1 rounded text-center text-xs focus:ring focus:ring-blue-300" data-idx="${i}" value="${valAct}" placeholder="-" oninput="window.userInputsCache.act['${i}'] = this.value; window.updateDashboard(); window.triggerSave();"></div>
                 `;
                 container.appendChild(row);
             });
@@ -958,12 +1135,16 @@
                 { id: 'chk_2', title: 'ผรจ. เสนอแผนงาน / ขออนุมัติวัสดุ', date: new Date(t_start + (15 * 86400000)), desc: 'ภายใน 15 วันแรก' },
                 { id: 'chk_3', title: 'ประเมินความก้าวหน้าครึ่งทาง (Mid-Term)', date: new Date(t_start + (totalDuration / 2)), desc: 'ผ่านไป 50% ของเวลาสัญญา' },
                 { id: 'chk_4', title: 'แจ้งเตือนสัญญาใกล้สิ้นสุด', date: new Date(t_end - (30 * 86400000)), desc: 'ล่วงหน้า 30 วัน' },
+                { id: 'chk_new_1', title: 'ส่งขอใบตรวจรับสภาพ และคืนท่อ อุปกรณ์ และซาก', date: new Date(t_end - (45 * 86400000)), desc: 'ก่อนครบกำหนดสัญญา 45 วัน' },
                 { id: 'chk_5', title: 'วันสิ้นสุดสัญญาจ้าง', date: endDate, desc: 'ห้ามส่งงานเกินวันนี้' },
                 { id: 'chk_6', title: 'คณะกรรมการตรวจรับงาน', date: new Date(t_end + (3 * 86400000)), desc: 'ภายใน 3 วันทำการหลังสิ้นสุด' }
             ];
 
+            // เรียงลำดับงานตามวันที่
+            tasks.sort((a, b) => a.date - b.date);
+
             tasks.forEach(task => {
-                const itemData = userInputsCache.checklist[task.id] || {};
+                const itemData = window.userInputsCache.checklist[task.id] || {};
                 const isChecked = itemData.checked || false;
                 const docVal = itemData.doc || '';
                 const dateVal = itemData.date || '';
@@ -1029,26 +1210,26 @@
 
         window.toggleChecklist = function(id) {
             const cb = document.getElementById(id);
-            if (!userInputsCache.checklist[id]) userInputsCache.checklist[id] = {};
-            userInputsCache.checklist[id].checked = cb.checked;
-            if (cb.checked && !userInputsCache.checklist[id].date) {
-                userInputsCache.checklist[id].date = document.getElementById('todayDate').value;
+            if (!window.userInputsCache.checklist[id]) window.userInputsCache.checklist[id] = {};
+            window.userInputsCache.checklist[id].checked = cb.checked;
+            if (cb.checked && !window.userInputsCache.checklist[id].date) {
+                window.userInputsCache.checklist[id].date = document.getElementById('todayDate').value;
             }
             window.updateDashboard(); 
             window.triggerSave();
         };
 
         window.updateChecklistDetail = function(id, field, value) {
-            if (!userInputsCache.checklist[id]) userInputsCache.checklist[id] = {};
-            userInputsCache.checklist[id][field] = value;
+            if (!window.userInputsCache.checklist[id]) window.userInputsCache.checklist[id] = {};
+            window.userInputsCache.checklist[id][field] = value;
             window.triggerSave();
         };
 
         window.handleFileUpload = function(id, inputElement) {
             if (inputElement.files && inputElement.files[0]) {
                 const file = inputElement.files[0];
-                if (!userInputsCache.checklist[id]) userInputsCache.checklist[id] = {};
-                userInputsCache.checklist[id].fileName = file.name;
+                if (!window.userInputsCache.checklist[id]) window.userInputsCache.checklist[id] = {};
+                window.userInputsCache.checklist[id].fileName = file.name;
                 window.updateDashboard();
                 window.triggerSave();
             }
