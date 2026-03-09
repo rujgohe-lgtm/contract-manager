@@ -875,11 +875,13 @@
             }
         };
 
-        window.setBudgetFilter = function(name) {
-            if (window.tableState.filters['budgetType'] === name.toLowerCase()) {
-                window.tableState.filters['budgetType'] = ''; // ยกเลิกการกรอง
+        // ปรับปรุงฟังก์ชันกรองงบประมาณให้รองรับ ปีงบประมาณ + ประเภทงบ
+        window.setBudgetFilter = function(type, year) {
+            const filterKey = `${type}|${year}`.toLowerCase();
+            if (window.tableState.filters['budgetFull'] === filterKey) {
+                window.tableState.filters['budgetFull'] = ''; // ยกเลิกการกรอง
             } else {
-                window.tableState.filters['budgetType'] = name.toLowerCase(); // เปิดการกรอง
+                window.tableState.filters['budgetFull'] = filterKey; // เปิดการกรอง
             }
             window.renderSummaryTable();
         };
@@ -1003,7 +1005,7 @@
             let amtNextMonth = 0;
 
             let supervisorData = {}; 
-            let budgetCounts = {};
+            let budgetCounts = {}; // ตัวแปรเก็บข้อมูลแยกตามปีและประเภทงบ
 
             allSummaryData.forEach(sum => {
                 if (sum.endDate) {
@@ -1034,6 +1036,7 @@
                 // นับสรุปผู้ควบคุมงาน แบบละเอียด (รวมยอดเงินและงบประมาณ)
                 const supName = sum.supervisorNameDisplay;
                 const budgetKey = sum.budgetType && sum.budgetType.trim() !== '' ? sum.budgetType.trim() : 'ไม่ระบุประเภท';
+                const fiscalYearKey = sum.fiscalYear && sum.fiscalYear.toString().trim() !== '' ? sum.fiscalYear.toString().trim() : 'ไม่ระบุปีงบประมาณ';
                 
                 if (!supervisorData[supName]) {
                     supervisorData[supName] = { count: 0, totalAmount: 0, totalRemaining: 0, budgets: {} };
@@ -1049,10 +1052,18 @@
                 supervisorData[supName].budgets[budgetKey].amount += sum.contractAmountRaw || 0;
                 supervisorData[supName].budgets[budgetKey].remaining += sum.remainingAmount || 0;
 
-                // นับสรุปประเภทงบประมาณ
-                if (!budgetCounts[budgetKey]) budgetCounts[budgetKey] = { count: 0, amount: 0 };
-                budgetCounts[budgetKey].count++;
-                budgetCounts[budgetKey].amount += sum.contractAmountRaw || 0;
+                // นับสรุปประเภทงบประมาณ โดยแบ่งกลุ่มชั้นแรกเป็น ปีงบประมาณ และชั้นสองเป็น ประเภทงบ
+                if (!budgetCounts[fiscalYearKey]) {
+                    budgetCounts[fiscalYearKey] = { totalAmount: 0, totalCount: 0, types: {} };
+                }
+                if (!budgetCounts[fiscalYearKey].types[budgetKey]) {
+                    budgetCounts[fiscalYearKey].types[budgetKey] = { count: 0, amount: 0 };
+                }
+                
+                budgetCounts[fiscalYearKey].totalAmount += sum.contractAmountRaw || 0;
+                budgetCounts[fiscalYearKey].totalCount++;
+                budgetCounts[fiscalYearKey].types[budgetKey].count++;
+                budgetCounts[fiscalYearKey].types[budgetKey].amount += sum.contractAmountRaw || 0;
             });
 
             const sumLastMonthEl = document.getElementById('sumLastMonth');
@@ -1077,7 +1088,6 @@
             // วาดรายการผู้ควบคุมงาน
             if (supContainer) {
                 supContainer.innerHTML = '';
-                // เรียงตามมูลค่ารวมของสัญญาจากมากไปน้อย
                 const sortedSups = Object.entries(supervisorData).sort((a, b) => b[1].totalAmount - a[1].totalAmount);
                 if (sortedSups.length === 0) {
                     supContainer.innerHTML = '<div class="text-xs text-gray-400 text-center py-3">ไม่มีข้อมูลผู้ควบคุมงาน</div>';
@@ -1087,7 +1097,6 @@
                         let isSelected = window.tableState.filters['supervisorName'] === filterName.toLowerCase();
                         let highlightClass = isSelected ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white border-gray-100 hover:bg-gray-50';
                         
-                        // สร้างรายการย่อย แยกตามประเภทงบประมาณ
                         let budgetHtml = Object.entries(data.budgets).map(([bName, bData]) => {
                             return `<div class="flex justify-between items-center mt-1 border-t border-gray-200 pt-1">
                                         <span><i class="fa-solid fa-caret-right text-gray-400 mr-1"></i> ${bName} (${bData.count})</span>
@@ -1119,28 +1128,50 @@
                 }
             }
 
-            // วาดรายการประเภทงบประมาณ
+            // วาดรายการประเภทงบประมาณแยกตามปี
             if (budgetContainer) {
                 budgetContainer.innerHTML = '';
-                // เรียงตามจำนวนเงินรวมสูงสุดไปต่ำสุด
-                const sortedBudgets = Object.entries(budgetCounts).sort((a, b) => b[1].amount - a[1].amount);
-                if (sortedBudgets.length === 0) {
+                
+                // เรียงตามปีงบประมาณจากใหม่ไปเก่า
+                const sortedYears = Object.entries(budgetCounts).sort((a, b) => {
+                    if (a[0] === 'ไม่ระบุปีงบประมาณ') return 1;
+                    if (b[0] === 'ไม่ระบุปีงบประมาณ') return -1;
+                    return b[0].localeCompare(a[0]);
+                });
+
+                if (sortedYears.length === 0) {
                     budgetContainer.innerHTML = '<div class="text-xs text-gray-400 text-center py-3">ไม่มีข้อมูลประเภทงบประมาณ</div>';
                 } else {
-                    sortedBudgets.forEach(([name, data]) => {
-                        let filterName = name === 'ไม่ระบุประเภท' ? '' : name;
-                        let isSelected = window.tableState.filters['budgetType'] === filterName.toLowerCase();
-                        let highlightClass = isSelected ? 'bg-emerald-50 border-emerald-200 shadow-sm' : 'border-gray-50 hover:bg-emerald-50';
-                        
+                    sortedYears.forEach(([year, yearData]) => {
+                        // เพิ่มหัวข้อปีงบประมาณ
                         budgetContainer.innerHTML += `
-                            <div onclick="window.setBudgetFilter('${filterName}')" title="คลิกเพื่อกรองข้อมูลตารางด้านล่าง" class="flex justify-between items-center py-1.5 px-2 border-b last:border-0 text-xs cursor-pointer rounded transition-colors group ${highlightClass}">
-                                <span class="text-gray-700 truncate pr-2 group-hover:text-emerald-800 font-semibold">
-                                    <i class="fa-solid fa-coins text-gray-400 group-hover:text-emerald-500 mr-1.5 transition-colors"></i> ${name} 
-                                    <span class="text-[9px] text-gray-400 group-hover:text-emerald-600 font-normal ml-1">(${data.count} งาน)</span>
-                                </span>
-                                <span class="text-emerald-700 font-bold">${data.amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                            <div class="bg-emerald-50 text-emerald-800 font-bold px-2 py-1.5 text-[11px] mt-2 first:mt-0 rounded-t flex justify-between items-center border border-emerald-100">
+                                <span><i class="fa-regular fa-calendar-check text-emerald-600 mr-1"></i> ปีงบฯ ${year}</span>
+                                <span>${yearData.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
                             </div>
                         `;
+
+                        // เรียงตามมูลค่างบประมาณในแต่ละปีจากมากไปน้อย
+                        const sortedTypes = Object.entries(yearData.types).sort((a, b) => b[1].amount - a[1].amount);
+                        
+                        sortedTypes.forEach(([type, data]) => {
+                            let filterType = type === 'ไม่ระบุประเภท' ? '' : type;
+                            let filterYear = year === 'ไม่ระบุปีงบประมาณ' ? '' : year;
+                            
+                            let filterKey = `${filterType}|${filterYear}`.toLowerCase();
+                            let isSelected = window.tableState.filters['budgetFull'] === filterKey;
+                            let highlightClass = isSelected ? 'bg-emerald-100 border-emerald-300 shadow-sm' : 'border-gray-50 hover:bg-gray-50 bg-white';
+                            
+                            budgetContainer.innerHTML += `
+                                <div onclick="window.setBudgetFilter('${filterType}', '${filterYear}')" title="คลิกเพื่อกรองข้อมูลตารางด้านล่าง" class="flex justify-between items-center py-2 px-2 text-[11px] cursor-pointer border border-t-0 last:rounded-b transition-colors group ${highlightClass}">
+                                    <span class="text-gray-700 truncate pr-2 group-hover:text-emerald-800 font-semibold pl-2 border-l-2 ${isSelected ? 'border-emerald-500' : 'border-transparent group-hover:border-emerald-300'}">
+                                        ${type} 
+                                        <span class="text-[9px] text-gray-400 group-hover:text-emerald-600 font-normal ml-1">(${data.count} งาน)</span>
+                                    </span>
+                                    <span class="${isSelected ? 'text-emerald-700' : 'text-gray-500 group-hover:text-emerald-700'} font-bold">${data.amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                            `;
+                        });
                     });
                 }
             }
@@ -1159,7 +1190,15 @@
                         if (key === 'name') return item.name.toLowerCase().includes(filterVal) || item.contractName.toLowerCase().includes(filterVal);
                         if (key === 'supervisorName') return item.supervisorNameDisplay.toLowerCase().includes(filterVal);
                         if (key === 'status') return item.status.toLowerCase().includes(filterVal);
-                        if (key === 'budgetType') return (item.budgetType || 'ไม่ระบุประเภท').toLowerCase().includes(filterVal);
+                        
+                        // ปรับปรุงการกรองให้เช็คทั้ง ประเภทงบประมาณ และ ปีงบประมาณพร้อมกัน
+                        if (key === 'budgetFull') {
+                            const [fType, fYear] = filterVal.split('|');
+                            const matchType = fType === '' || (item.budgetType || 'ไม่ระบุประเภท').toLowerCase() === fType;
+                            const matchYear = fYear === '' || (item.fiscalYear || 'ไม่ระบุปีงบประมาณ').toLowerCase() === fYear;
+                            return matchType && matchYear;
+                        }
+                        
                         return true;
                     });
                 }
@@ -1883,6 +1922,7 @@
     </script>
 </body>
 </html>
+
 
 
 
