@@ -105,14 +105,33 @@
                     
                     <form id="contractForm" class="space-y-4" onsubmit="event.preventDefault();">
                         <div>
-                            <label class="block text-sm font-semibold mb-1">ชื่อโครงการ</label>
-                            <input type="text" id="projectName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" oninput="window.handleFormChange()">
+                            <label class="block text-sm font-semibold mb-1">เลขที่/สัญญา</label>
+                            <input type="text" id="contractName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุเลขที่สัญญา..." oninput="window.handleFormChange()">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">ประเภทงบประมาณ</label>
+                                <select id="budgetType" class="w-full border p-2 rounded focus:ring focus:ring-blue-200 bg-white" onchange="window.handleFormChange()">
+                                    <option value="">-- เลือกประเภทงบประมาณ --</option>
+                                    <option value="ปรับปรุงกำลังน้ำ">ปรับปรุงกำลังน้ำ</option>
+                                    <option value="คลส.">คลส.</option>
+                                    <option value="ขยายเขต-รับจ้างงานเอกชน">ขยายเขต-รับจ้างงานเอกชน</option>
+                                    <option value="ขยายเขต-รับจ้างงานภาครัฐ">ขยายเขต-รับจ้างงานภาครัฐ</option>
+                                    <option value="ขยายเขต-ติดตั้งประปา">ขยายเขต-ติดตั้งประปา</option>
+                                    <option value="รื้อย้ายแนวท่อ">รื้อย้ายแนวท่อ</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">ปีงบประมาณ</label>
+                                <input type="number" id="fiscalYear" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุปี เช่น 2568" oninput="window.handleFormChange()">
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
                             <div class="xl:col-span-1">
-                                <label class="block text-sm font-semibold mb-1">เลขที่/สัญญา</label>
-                                <input type="text" id="contractName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุ..." oninput="window.handleFormChange()">
+                                <label class="block text-sm font-semibold mb-1">ชื่อโครงการ</label>
+                                <input type="text" id="projectName" class="w-full border p-2 rounded focus:ring focus:ring-blue-200" placeholder="ระบุชื่อโครงการ..." oninput="window.handleFormChange()">
                             </div>
                             <div class="xl:col-span-1">
                                 <label class="block text-sm font-semibold mb-1">ผู้ควบคุมงาน</label>
@@ -271,7 +290,7 @@
                 </div>
 
                 <!-- ข้อมูลสรุป Dashboard ย่อย -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
                     <!-- กล่องที่ 1: สรุปงานที่จะสิ้นสุด -->
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fa-regular fa-calendar-xmark text-red-500"></i> จำนวนสัญญาที่จะสิ้นสุด</h3>
@@ -295,8 +314,16 @@
                     <!-- กล่องที่ 2: สรุปผู้ควบคุมงาน -->
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col">
                         <h3 class="text-sm font-bold text-gray-700 mb-2"><i class="fa-solid fa-users-gear text-indigo-500"></i> ภาระงาน (สัญญา/ผู้ควบคุมงาน)</h3>
-                        <div class="flex-1 overflow-y-auto max-h-[72px] custom-scrollbar bg-white rounded border border-gray-100 p-2 shadow-inner" id="supervisorSummaryList">
+                        <div class="flex-1 overflow-y-auto max-h-72 custom-scrollbar bg-white rounded border border-gray-100 p-2 shadow-inner" id="supervisorSummaryList">
                             <!-- รายชื่อผู้ควบคุมงานจะถูกสร้างที่นี่ -->
+                        </div>
+                    </div>
+
+                    <!-- กล่องที่ 3: สรุปตามประเภทงบประมาณ -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-2"><i class="fa-solid fa-sack-dollar text-emerald-500"></i> สรุปประเภทงบประมาณ</h3>
+                        <div class="flex-1 overflow-y-auto max-h-72 custom-scrollbar bg-white rounded border border-gray-100 p-2 shadow-inner" id="budgetSummaryList">
+                            <!-- ข้อมูลงบประมาณจะถูกสร้างที่นี่ -->
                         </div>
                     </div>
                 </div>
@@ -306,7 +333,7 @@
                         <thead>
                             <tr class="bg-indigo-50 text-indigo-900 border-b border-indigo-100">
                                 <th class="p-2 font-bold text-center">No.</th>
-                                <th class="p-2 font-bold sortable" onclick="window.sortTable('name')" title="คลิกเพื่อเรียงลำดับ">ชื่อโครงการ/สัญญา <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
+                                <th class="p-2 font-bold sortable" onclick="window.sortTable('contractName')" title="คลิกเพื่อเรียงลำดับ">เลขที่สัญญา/โครงการ <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold sortable" onclick="window.sortTable('supervisorName')" title="คลิกเพื่อเรียงลำดับ">ผู้ควบคุมงาน <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold text-right sortable" onclick="window.sortTable('contractAmountRaw')" title="คลิกเพื่อเรียงลำดับ">วงเงินสัญญา <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold text-right sortable" onclick="window.sortTable('remainingAmount')" title="คลิกเพื่อเรียงลำดับ">คงเหลือ <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
@@ -319,8 +346,8 @@
                             </tr>
                             <tr class="bg-gray-50 border-b border-gray-200">
                                 <th></th>
-                                <th class="p-1"><input type="text" class="w-full border border-gray-300 rounded px-2 py-1 text-xs font-normal focus:ring focus:ring-indigo-200" placeholder="🔍 ค้นหาชื่อ..." oninput="window.filterTable('name', this.value)"></th>
-                                <th class="p-1"><input type="text" class="w-full border border-gray-300 rounded px-2 py-1 text-xs font-normal focus:ring focus:ring-indigo-200" placeholder="🔍 ค้นหาผู้คุมงาน..." oninput="window.filterTable('supervisorName', this.value)"></th>
+                                <th class="p-1"><input type="text" class="w-full border border-gray-300 rounded px-2 py-1 text-xs font-normal focus:ring focus:ring-indigo-200 transition-shadow" placeholder="🔍 ค้นหาสัญญา/ชื่อ..." oninput="window.filterTable('name', this.value)"></th>
+                                <th class="p-1"><input type="text" id="filterSupervisorInput" class="w-full border border-gray-300 rounded px-2 py-1 text-xs font-normal focus:ring focus:ring-indigo-200 transition-shadow" placeholder="🔍 ค้นหาผู้คุมงาน..." oninput="window.filterTable('supervisorName', this.value)"></th>
                                 <th></th>
                                 <th></th>
                                 <th></th>
@@ -328,7 +355,7 @@
                                 <th></th>
                                 <th></th>
                                 <th class="p-1">
-                                    <select class="w-full border border-gray-300 rounded px-1 py-1 text-xs font-normal focus:ring focus:ring-indigo-200" onchange="window.filterTable('status', this.value)">
+                                    <select class="w-full border border-gray-300 rounded px-1 py-1 text-xs font-normal focus:ring focus:ring-indigo-200 transition-shadow" onchange="window.filterTable('status', this.value)">
                                         <option value="">ทุกสถานะ</option>
                                         <option value="ปกติ">ปกติ</option>
                                         <option value="ล่าช้า">ล่าช้า</option>
@@ -567,6 +594,8 @@
             const proj = projects.find(p => p.id === activeProjectId);
             const projData = {
                 name: document.getElementById('projectName').value || 'โครงการไม่มีชื่อ',
+                budgetType: document.getElementById('budgetType').value || '',
+                fiscalYear: document.getElementById('fiscalYear').value || '',
                 contractName: document.getElementById('contractName').value || '',
                 supervisorName: document.getElementById('supervisorName').value || '',
                 contractAmount: document.getElementById('contractAmount').value || '',
@@ -630,6 +659,8 @@
             
             const newProject = {
                 name: isInitial ? 'โครงการวางท่อจ่ายน้ำ ถนนสุขุมวิท' : `โครงการใหม่ ${projects.length + 1}`,
+                budgetType: isInitial ? 'ปรับปรุงกำลังน้ำ' : '',
+                fiscalYear: isInitial ? '2568' : '',
                 contractName: isInitial ? 'สญ. 123/2568' : '',
                 supervisorName: isInitial ? 'นายสมชาย ใจดี' : '',
                 contractAmount: isInitial ? '1500000.00' : '',
@@ -728,6 +759,8 @@
 
         function loadProjectDataToUI(proj) {
             document.getElementById('projectName').value = proj.name || '';
+            document.getElementById('budgetType').value = proj.budgetType || '';
+            document.getElementById('fiscalYear').value = proj.fiscalYear || '';
             document.getElementById('contractName').value = proj.contractName || '';
             document.getElementById('supervisorName').value = proj.supervisorName || '';
             
@@ -824,6 +857,30 @@
             window.renderSummaryTable();
         };
 
+        window.setSupervisorFilter = function(name) {
+            const input = document.getElementById('filterSupervisorInput');
+            if (input) {
+                if (input.value === name) {
+                    input.value = ''; 
+                    window.filterTable('supervisorName', '');
+                } else {
+                    input.value = name;
+                    window.filterTable('supervisorName', name);
+                }
+                input.classList.add('ring-2', 'ring-indigo-500');
+                setTimeout(() => input.classList.remove('ring-2', 'ring-indigo-500'), 500);
+            }
+        };
+
+        window.setBudgetFilter = function(name) {
+            if (window.tableState.filters['budgetType'] === name.toLowerCase()) {
+                window.tableState.filters['budgetType'] = ''; // ยกเลิกการกรอง
+            } else {
+                window.tableState.filters['budgetType'] = name.toLowerCase(); // เปิดการกรอง
+            }
+            window.renderSummaryTable();
+        };
+
         function getProjectSummaryData(proj) {
             if (!proj.startDate) return null;
             
@@ -904,8 +961,11 @@
             return {
                 id: proj.id,
                 name: proj.name || '',
+                budgetType: proj.budgetType || '',
+                fiscalYear: proj.fiscalYear || '',
                 contractName: proj.contractName || '',
                 supervisorName: proj.supervisorName || '',
+                supervisorNameDisplay: (proj.supervisorName && proj.supervisorName.trim() !== '') ? proj.supervisorName.trim() : 'ไม่ระบุชื่อ',
                 contractAmountRaw: contractAmountRaw,
                 contractAmount: contractAmountRaw ? contractAmountRaw.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-',
                 remainingAmount: remainingBudget,
@@ -934,7 +994,8 @@
             let countLastMonth = 0;
             let countCurrentMonth = 0;
             let countNextMonth = 0;
-            let supervisorCounts = {};
+            let supervisorData = {}; // เปลี่ยนมาเก็บข้อมูลแบบลึกขึ้น
+            let budgetCounts = {};
 
             allSummaryData.forEach(sum => {
                 if (sum.endDate) {
@@ -959,30 +1020,105 @@
                     }
                 }
 
-                const supName = sum.supervisorName && sum.supervisorName.trim() !== '' ? sum.supervisorName.trim() : 'ไม่ระบุชื่อ';
-                supervisorCounts[supName] = (supervisorCounts[supName] || 0) + 1;
+                // นับสรุปผู้ควบคุมงาน แบบละเอียด (รวมยอดเงินและงบประมาณ)
+                const supName = sum.supervisorNameDisplay;
+                const budgetKey = sum.budgetType && sum.budgetType.trim() !== '' ? sum.budgetType.trim() : 'ไม่ระบุประเภท';
+                
+                if (!supervisorData[supName]) {
+                    supervisorData[supName] = { count: 0, totalAmount: 0, totalRemaining: 0, budgets: {} };
+                }
+                supervisorData[supName].count++;
+                supervisorData[supName].totalAmount += sum.contractAmountRaw || 0;
+                supervisorData[supName].totalRemaining += sum.remainingAmount || 0;
+
+                if (!supervisorData[supName].budgets[budgetKey]) {
+                    supervisorData[supName].budgets[budgetKey] = { count: 0, amount: 0, remaining: 0 };
+                }
+                supervisorData[supName].budgets[budgetKey].count++;
+                supervisorData[supName].budgets[budgetKey].amount += sum.contractAmountRaw || 0;
+                supervisorData[supName].budgets[budgetKey].remaining += sum.remainingAmount || 0;
+
+                // นับสรุปประเภทงบประมาณ
+                if (!budgetCounts[budgetKey]) budgetCounts[budgetKey] = { count: 0, amount: 0 };
+                budgetCounts[budgetKey].count++;
+                budgetCounts[budgetKey].amount += sum.contractAmountRaw || 0;
             });
 
             const sumLastMonthEl = document.getElementById('sumLastMonth');
             const sumCurrentMonthEl = document.getElementById('sumCurrentMonth');
             const sumNextMonthEl = document.getElementById('sumNextMonth');
             const supContainer = document.getElementById('supervisorSummaryList');
+            const budgetContainer = document.getElementById('budgetSummaryList');
 
             if(sumLastMonthEl) sumLastMonthEl.innerText = countLastMonth;
             if(sumCurrentMonthEl) sumCurrentMonthEl.innerText = countCurrentMonth;
             if(sumNextMonthEl) sumNextMonthEl.innerText = countNextMonth;
 
+            // วาดรายการผู้ควบคุมงาน
             if (supContainer) {
                 supContainer.innerHTML = '';
-                const sortedSups = Object.entries(supervisorCounts).sort((a, b) => b[1] - a[1]);
+                // เรียงตามมูลค่ารวมของสัญญาจากมากไปน้อย
+                const sortedSups = Object.entries(supervisorData).sort((a, b) => b[1].totalAmount - a[1].totalAmount);
                 if (sortedSups.length === 0) {
                     supContainer.innerHTML = '<div class="text-xs text-gray-400 text-center py-3">ไม่มีข้อมูลผู้ควบคุมงาน</div>';
                 } else {
-                    sortedSups.forEach(([name, count]) => {
+                    sortedSups.forEach(([name, data]) => {
+                        let filterName = name === 'ไม่ระบุชื่อ' ? '' : name;
+                        let isSelected = window.tableState.filters['supervisorName'] === filterName.toLowerCase();
+                        let highlightClass = isSelected ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white border-gray-100 hover:bg-gray-50';
+                        
+                        // สร้างรายการย่อย แยกตามประเภทงบประมาณ
+                        let budgetHtml = Object.entries(data.budgets).map(([bName, bData]) => {
+                            return `<div class="flex justify-between items-center mt-1 border-t border-gray-200 pt-1">
+                                        <span><i class="fa-solid fa-caret-right text-gray-400 mr-1"></i> ${bName} (${bData.count})</span>
+                                        <span class="text-gray-500">${bData.amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                                    </div>`;
+                        }).join('');
+
                         supContainer.innerHTML += `
-                            <div class="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0 text-xs">
-                                <span class="text-gray-700 truncate pr-2"><i class="fa-solid fa-user-tie text-gray-400 mr-1.5"></i> ${name}</span>
-                                <span class="bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-md min-w-[24px] text-center">${count}</span>
+                            <div onclick="window.setSupervisorFilter('${filterName}')" title="คลิกเพื่อกรองข้อมูลตารางด้านล่าง" class="flex flex-col py-2 px-3 mb-2 border rounded cursor-pointer transition-colors group ${highlightClass}">
+                                <div class="flex justify-between items-center border-b border-gray-100 pb-1 mb-1.5">
+                                    <span class="text-indigo-900 truncate pr-2 font-bold"><i class="fa-solid fa-user-tie text-indigo-400 mr-1.5 transition-colors"></i> ${name}</span>
+                                    <span class="bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-md text-[10px] min-w-[24px] text-center">${data.count} สัญญา</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] mb-0.5">
+                                    <span class="text-gray-600">มูลค่ารวม:</span>
+                                    <span class="font-bold text-gray-800">${data.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] mb-1.5">
+                                    <span class="text-gray-600">คงเหลือ (ยังไม่เบิก):</span>
+                                    <span class="font-bold text-emerald-600">${data.totalRemaining.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                                </div>
+                                <div class="text-[9px] text-gray-600 bg-gray-50 p-1.5 rounded border border-gray-100">
+                                    <div class="font-semibold text-gray-700 mb-0.5">แยกตามประเภทงบประมาณ:</div>
+                                    ${budgetHtml}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            // วาดรายการประเภทงบประมาณ
+            if (budgetContainer) {
+                budgetContainer.innerHTML = '';
+                // เรียงตามจำนวนเงินรวมสูงสุดไปต่ำสุด
+                const sortedBudgets = Object.entries(budgetCounts).sort((a, b) => b[1].amount - a[1].amount);
+                if (sortedBudgets.length === 0) {
+                    budgetContainer.innerHTML = '<div class="text-xs text-gray-400 text-center py-3">ไม่มีข้อมูลประเภทงบประมาณ</div>';
+                } else {
+                    sortedBudgets.forEach(([name, data]) => {
+                        let filterName = name === 'ไม่ระบุประเภท' ? '' : name;
+                        let isSelected = window.tableState.filters['budgetType'] === filterName.toLowerCase();
+                        let highlightClass = isSelected ? 'bg-emerald-50 border-emerald-200 shadow-sm' : 'border-gray-50 hover:bg-emerald-50';
+                        
+                        budgetContainer.innerHTML += `
+                            <div onclick="window.setBudgetFilter('${filterName}')" title="คลิกเพื่อกรองข้อมูลตารางด้านล่าง" class="flex justify-between items-center py-1.5 px-2 border-b last:border-0 text-xs cursor-pointer rounded transition-colors group ${highlightClass}">
+                                <span class="text-gray-700 truncate pr-2 group-hover:text-emerald-800 font-semibold">
+                                    <i class="fa-solid fa-coins text-gray-400 group-hover:text-emerald-500 mr-1.5 transition-colors"></i> ${name} 
+                                    <span class="text-[9px] text-gray-400 group-hover:text-emerald-600 font-normal ml-1">(${data.count} งาน)</span>
+                                </span>
+                                <span class="text-emerald-700 font-bold">${data.amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
                             </div>
                         `;
                     });
@@ -1001,8 +1137,9 @@
                 if (filterVal) {
                     displayData = displayData.filter(item => {
                         if (key === 'name') return item.name.toLowerCase().includes(filterVal) || item.contractName.toLowerCase().includes(filterVal);
-                        if (key === 'supervisorName') return item.supervisorName.toLowerCase().includes(filterVal);
+                        if (key === 'supervisorName') return item.supervisorNameDisplay.toLowerCase().includes(filterVal);
                         if (key === 'status') return item.status.toLowerCase().includes(filterVal);
+                        if (key === 'budgetType') return (item.budgetType || 'ไม่ระบุประเภท').toLowerCase().includes(filterVal);
                         return true;
                     });
                 }
@@ -1037,10 +1174,10 @@
                 tr.innerHTML = `
                     <td class="p-2 border-b text-center text-gray-500">${index++}</td>
                     <td class="p-2 border-b font-semibold text-indigo-900 cursor-pointer hover:underline" onclick="window.switchProject('${sum.id}'); window.switchTab('detail');">
-                        ${sum.name}
-                        <div class="text-[10px] text-gray-500 font-normal mt-0.5">สัญญา: ${sum.contractName || '-'}</div>
+                        ${sum.contractName || '-'}
+                        <div class="text-[10px] text-gray-500 font-normal mt-0.5">โครงการ: ${sum.name || '-'} | งบ: ${sum.budgetType || '-'} (${sum.fiscalYear || '-'})</div>
                     </td>
-                    <td class="p-2 border-b text-gray-700">${sum.supervisorName || '-'}</td>
+                    <td class="p-2 border-b text-gray-700">${sum.supervisorNameDisplay}</td>
                     <td class="p-2 border-b text-right text-gray-700">${sum.contractAmount}</td>
                     <td class="p-2 border-b text-right text-emerald-700 font-semibold">${sum.remainingAmountText}</td>
                     <td class="p-2 border-b text-center text-gray-600">${formatDateShort(new Date(sum.endDate))}</td>
@@ -1068,7 +1205,7 @@
             if (projects.length === 0) return alert("ไม่มีข้อมูลให้ Export");
             
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
-            csvContent += "ลำดับ,ชื่อโครงการ,เลขที่/ชื่อสัญญา,ผู้ควบคุมงาน,วงเงินสัญญา(บาท),วงเงินคงเหลือ(บาท),วันที่สิ้นสุดสัญญา,แผนงานสะสม(%),ผลงานจริง(%),ส่วนต่าง,สถานะ\r\n";
+            csvContent += "ลำดับ,ชื่อโครงการ,ประเภทงบประมาณ,ปีงบประมาณ,เลขที่/ชื่อสัญญา,ผู้ควบคุมงาน,วงเงินสัญญา(บาท),วงเงินคงเหลือ(บาท),วันที่สิ้นสุดสัญญา,แผนงานสะสม(%),ผลงานจริง(%),ส่วนต่าง,สถานะ\r\n";
 
             let index = 1;
             projects.forEach(proj => {
@@ -1076,7 +1213,7 @@
                 if(sum) {
                     let cleanAmount = sum.contractAmount.replace(/,/g, ''); 
                     let cleanRemaining = sum.remainingAmountText.replace(/,/g, '');
-                    csvContent += `${index++},"${sum.name}","${sum.contractName || ''}","${sum.supervisorName || ''}","${cleanAmount}","${cleanRemaining}","${formatDateFull(new Date(sum.endDate))}",${sum.plan},${sum.actual},${sum.variance},"${sum.status}"\r\n`;
+                    csvContent += `${index++},"${sum.name}","${sum.budgetType || ''}","${sum.fiscalYear || ''}","${sum.contractName || ''}","${sum.supervisorNameDisplay}","${cleanAmount}","${cleanRemaining}","${formatDateFull(new Date(sum.endDate))}",${sum.plan},${sum.actual},${sum.variance},"${sum.status}"\r\n`;
                 }
             });
 
@@ -1101,6 +1238,8 @@
 
             csvContent += "หัวข้อ,รายละเอียด\r\n";
             csvContent += `ชื่อโครงการ,"${proj.name || '-'}"\r\n`;
+            csvContent += `ประเภทงบประมาณ,"${proj.budgetType || '-'}"\r\n`;
+            csvContent += `ปีงบประมาณ,"${proj.fiscalYear || '-'}"\r\n`;
             csvContent += `เลขที่/ชื่อสัญญา,"${proj.contractName || '-'}"\r\n`;
             csvContent += `ผู้ควบคุมงาน,"${proj.supervisorName || '-'}"\r\n`;
             csvContent += `วงเงินสัญญา (บาท),"${rawContract}"\r\n`;
@@ -1126,7 +1265,6 @@
             const t_start = new Date(proj.startDate).getTime();
             const t_end = t_start + ((parseInt(proj.duration || 150) + parseInt(proj.extensionDays || 0)) * 86400000) - 86400000;
             
-            // คำนวณหา W124 สำหรับเพิ่มใน Export
             const checkDate = new Date(document.getElementById('todayDate').value || new Date());
             const MS_PER_DAY = 1000 * 60 * 60 * 24;
             let elapsedDays = Math.floor((checkDate - new Date(proj.startDate)) / MS_PER_DAY) + 1;
@@ -1472,7 +1610,6 @@
                 actualLineColor = '#10b981';
             }
 
-            // --- ระบบคำนวณเงื่อนไขบอกเลิกสัญญาตาม ว124 ---
             let isW124 = false;
             let w124Reason = "";
             let actualForW124 = currentActual !== null ? currentActual : latestActValue;
@@ -1484,7 +1621,6 @@
                 else if (timePercent > 50 && actualForW124 < 50) { isW124 = true; w124Reason = "ข้อ 2.2.2(2)"; }
             }
 
-            // เตรียมข้อมูลจุดแจ้งเตือนลงกราฟ S-Curve
             let eventsData = [];
             if (isW124 && actualForW124 !== null) {
                 eventsData.push({ x: todayX, y: actualForW124, customLabel: `🚨 เข้าข่ายบอกเลิกสัญญา (ว124 ${w124Reason})` });
@@ -1505,7 +1641,9 @@
 
             const tasks = [
                 { id: 'chk_1', title: 'ลงนามส่งมอบพื้นที่ / เริ่มงาน', date: startDate, desc: 'จุดเริ่มต้นสัญญา' },
+                { id: 'chk_w1', title: 'หนังสือแจ้งเร่งรัดปฏิบัติงาน (กรณีไม่เข้าทำงานตามกำหนด)', date: new Date(t_start + (15 * 86400000)), desc: 'ตามกฎ ว124 (ข้อ 2.1.1)' },
                 { id: 'chk_2', title: 'ผรจ. เสนอแผนงาน / ขออนุมัติวัสดุ', date: new Date(t_start + (15 * 86400000)), desc: 'ภายใน 15 วันแรก' },
+                { id: 'chk_w2', title: 'หนังสือแจ้งเร่งรัดปฏิบัติงาน (กรณีงานล่าช้ากว่าแผน)', date: new Date(t_start + (totalDuration / 3)), desc: 'ตามกฎ ว124 (ข้อ 2.1.2)' },
                 { id: 'chk_3', title: 'ประเมินความก้าวหน้าครึ่งทาง (Mid-Term)', date: new Date(t_start + (totalDuration / 2)), desc: 'ผ่านไป 50% ของเวลาสัญญา' },
                 { id: 'chk_4', title: 'แจ้งเตือนสัญญาใกล้สิ้นสุด', date: new Date(t_end - (30 * 86400000)), desc: 'ล่วงหน้า 30 วัน' },
                 { id: 'chk_new_1', title: 'ส่งขอใบตรวจรับสภาพ และคืนท่อ อุปกรณ์ และซาก', date: new Date(t_end - (45 * 86400000)), desc: 'ก่อนครบกำหนดสัญญา 45 วัน' },
@@ -1513,7 +1651,6 @@
                 { id: 'chk_6', title: 'คณะกรรมการตรวจรับงาน', date: new Date(t_end + (3 * 86400000)), desc: 'ภายใน 3 วันทำการหลังสิ้นสุด' }
             ];
 
-            // สร้างรายการ Checklist ใหม่เมื่อเข้าข่าย ว124
             if (isW124) {
                 tasks.push({
                     id: 'chk_w3',
@@ -1635,7 +1772,6 @@
                     pointRadius: function(context) { return (context.raw && context.raw.customLabel && context.raw.customLabel.includes('วันนี้')) ? 7 : 4; },
                     pointHoverRadius: function(context) { return (context.raw && context.raw.customLabel && context.raw.customLabel.includes('วันนี้')) ? 9 : 6; }
                 },
-                // เพิ่มข้อมูลแจ้งเตือน (เหตุการณ์ ว124) ลงกราฟ
                 { label: 'จุดแจ้งเตือน (ว124)', data: eventsData, borderColor: '#dc2626', backgroundColor: '#dc2626', pointStyle: 'rectRot', pointRadius: 8, pointHoverRadius: 11, showLine: false }
             ];
 
