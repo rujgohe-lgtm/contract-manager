@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบริหารและติดตามสัญญาจ้าง (Cloud W124 & Checklist)</title>
+    <title>ระบบบริหารสัญญาจ้าง (Cloud W124 & Checklist)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -58,7 +58,7 @@
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-cloud text-3xl text-yellow-400"></i>
                 <div>
-                    <h1 class="text-xl font-bold md:text-2xl">ระบบบริหารและติดตามสัญญาจ้าง</h1>
+                    <h1 class="text-xl font-bold md:text-2xl">ระบบบริหารสัญญาจ้าง</h1>
                     <p class="text-sm text-blue-200" id="connectionStatus">สถานะ: กำลังเชื่อมต่อ...</p>
                 </div>
             </div>
@@ -75,6 +75,9 @@
             <button onclick="window.switchTab('summary')" id="tabSummaryBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-indigo-600 text-indigo-700 font-bold focus:outline-none flex items-center gap-2 bg-white rounded-t-lg transition">
                 <i class="fa-solid fa-table-list"></i> สรุปภาพรวมทั้งหมด
             </button>
+            <button onclick="window.switchTab('workload')" id="tabWorkloadBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
+                <i class="fa-solid fa-users-gear"></i> ภาระงาน (ผู้ควบคุมงาน)
+            </button>
             <button onclick="window.switchTab('detail')" id="tabDetailBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
                 <i class="fa-solid fa-list-check"></i> รายละเอียดโครงการ
             </button>
@@ -85,9 +88,15 @@
             
             <!-- แถบจัดการโครงการ -->
             <div class="lg:col-span-12 bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-800 flex flex-col sm:flex-row justify-between items-center gap-4 mb-2">
-                <div class="flex-1 flex items-center gap-4 w-full">
+                <div class="flex-1 flex items-center gap-4 w-full" id="projectSelectorContainer">
                     <label class="font-bold text-gray-700 whitespace-nowrap"><i class="fa-solid fa-folder-open text-blue-500"></i> เลือกโครงการ:</label>
-                    <select id="projectSelector" class="border p-2 rounded w-full max-w-md focus:ring focus:ring-blue-200 text-sm font-semibold bg-gray-50" onchange="window.switchProject(this.value)"></select>
+                    <div class="relative w-full max-w-md">
+                        <input type="text" id="projectSearchInput" class="border p-2 rounded w-full focus:ring focus:ring-blue-200 text-sm font-semibold bg-white pr-8 shadow-inner cursor-pointer" placeholder="🔍 ค้นหาปีงบฯ หรือชื่อโครงการ..." onclick="window.toggleProjectDropdown()" oninput="window.filterProjectDropdown()">
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer pointer-events-none"></i>
+                        <div id="projectDropdownList" class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-xl hidden max-h-60 overflow-y-auto custom-scrollbar">
+                            <!-- Dropdown items injected here -->
+                        </div>
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="window.createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition flex items-center gap-2 text-sm whitespace-nowrap font-bold">
@@ -135,9 +144,9 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold mb-1 text-gray-600">ปีงบประมาณ / ผู้ควบคุมงาน</label>
+                                <label class="block text-xs font-semibold mb-1 text-gray-600">ปีงบประมาณ <span class="text-[10px] text-red-500 font-normal">(ตย. 25xx)</span> / ผู้ควบคุมงาน</label>
                                 <div class="flex gap-1">
-                                    <input type="number" id="fiscalYear" class="w-1/3 border p-2 rounded focus:ring focus:ring-blue-200 text-sm" placeholder="ปี" oninput="window.handleFormChange()">
+                                    <input type="text" id="fiscalYear" class="w-1/3 border p-2 rounded focus:ring focus:ring-blue-200 text-sm text-center font-bold text-emerald-700" placeholder="ปี" maxlength="4" oninput="window.formatFiscalYear(this)" onblur="window.padFiscalYear(this)">
                                     <input type="text" id="supervisorName" list="supervisorList" class="w-2/3 border p-2 rounded focus:ring focus:ring-blue-200 text-sm" placeholder="ผู้ควบคุม..." oninput="window.handleFormChange()">
                                     <datalist id="supervisorList">
                                         <option value="นายชวนันท์ กุลนริศ"></option>
@@ -255,7 +264,7 @@
                                     <i class="fas fa-plus"></i> เพิ่มเส้นทาง
                                 </button>
                             </div>
-                            <div id="routesContainer" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-1 pb-1">
+                            <div id="routesContainer" class="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-1 pb-1">
                                 <!-- Route items injected here -->
                             </div>
                         </div>
@@ -459,7 +468,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
                     <!-- กล่องที่ 1: สรุปงานที่จะสิ้นสุด -->
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col lg:col-span-2 shadow-sm">
-                        <h3 class="text-base font-bold text-gray-700 mb-3"><i class="fa-regular fa-calendar-xmark text-red-500"></i> จำนวนสัญญาที่จะสิ้นสุด <span class="text-xs text-gray-400 font-normal">(คลิกที่เดือนเพื่อกรองข้อมูลตาราง)</span></h3>
+                        <h3 class="text-base font-bold text-gray-700 mb-3"><i class="fa-regular fa-calendar-xmark text-red-500"></i> จำนวนสัญญาที่จะสิ้นสุด <span class="text-xs text-gray-400 font-normal">(คลิกเดือนเพื่อกรอง)</span></h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center flex-1">
                             <div id="boxLastMonth" onclick="window.setEndingMonthFilter('last')" class="bg-white p-3 rounded shadow-sm border border-gray-200 flex flex-col cursor-pointer hover:bg-red-50 transition-colors">
                                 <div class="border-b border-gray-100 pb-2 pointer-events-none">
@@ -517,6 +526,7 @@
                                 <th class="p-2 font-bold text-center">No.</th>
                                 <th class="p-2 font-bold sortable" onclick="window.sortTable('contractName')" title="คลิกเพื่อเรียงลำดับ">เลขที่สัญญา/โครงการ <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold sortable" onclick="window.sortTable('supervisorName')" title="คลิกเพื่อเรียงลำดับ">ผู้ควบคุมงาน <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
+                                <th class="p-2 font-bold text-center sortable" onclick="window.sortTable('fiscalYear')" title="คลิกเพื่อเรียงลำดับ">ปีงบฯ / ประเภท <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold text-right sortable" onclick="window.sortTable('contractAmountRaw')" title="คลิกเพื่อเรียงลำดับ">วงเงินสัญญา <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold text-right sortable" onclick="window.sortTable('remainingAmount')" title="คลิกเพื่อเรียงลำดับ">คงเหลือ <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
                                 <th class="p-2 font-bold text-center sortable" onclick="window.sortTable('endDate')" title="คลิกเพื่อเรียงลำดับ">วันสิ้นสุด <i class="fa-solid fa-sort text-indigo-300 ml-1"></i></th>
@@ -530,7 +540,7 @@
                                 <th></th>
                                 <th class="p-1"><input type="text" class="w-full border border-gray-300 rounded px-2 py-1 text-xs font-normal focus:ring focus:ring-indigo-200" placeholder="🔍 ค้นหา..." oninput="window.filterTable('name', this.value)"></th>
                                 <th class="p-1"><input type="text" id="filterSupervisorInput" class="w-full border border-gray-300 rounded px-2 py-1 text-xs font-normal focus:ring focus:ring-indigo-200" placeholder="🔍 ค้นหา..." oninput="window.filterTable('supervisorName', this.value)"></th>
-                                <th></th><th></th><th></th><th></th><th></th><th></th>
+                                <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
                                 <th class="p-1">
                                     <select class="w-full border border-gray-300 rounded px-1 py-1 text-xs font-normal focus:ring focus:ring-indigo-200" onchange="window.filterTable('status', this.value)">
                                         <option value="">ทุกสถานะ</option>
@@ -550,6 +560,19 @@
                 <div class="mt-4 text-xs text-gray-500 flex items-center gap-2">
                     <i class="fa-solid fa-circle-info text-indigo-400"></i>
                     <span>อัปเดตข้อมูลล่าสุดเมื่อ: <span id="summaryUpdateTime">กำลังอัปเดต...</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= TAB 3: ภาระงานผู้ควบคุมงาน (Workload View) ======================= -->
+        <div id="viewWorkload" class="lg:col-span-12 w-full hidden">
+            <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-blue-500">
+                <div class="flex justify-between items-center mb-6 border-b pb-3">
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-blue-800"><i class="fa-solid fa-users-gear"></i> ภาระงาน (สัญญา / ผู้ควบคุมงาน)</h2>
+                </div>
+                <!-- Grid Cards for Supervisors -->
+                <div id="workloadCardsContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    <!-- Cards injected here -->
                 </div>
             </div>
         </div>
@@ -627,7 +650,58 @@
 
         window.tableState = { sortCol: null, sortDir: 'asc', filters: {} };
 
-        // --- FORMATTERS ---
+        // --- MATH EVALUATION & FORMATTERS ---
+        window.evaluateMath = function(expr) {
+            try {
+                let cleanExpr = expr.replace(/,/g, '').replace(/\s/g, '');
+                if (cleanExpr === '') return 0;
+                if (/^[0-9+\-*/().]+$/.test(cleanExpr)) {
+                    let result = new Function('return ' + cleanExpr)();
+                    return (isNaN(result) || !isFinite(result)) ? 0 : result;
+                }
+            } catch (e) {
+                console.warn("Invalid equation:", expr);
+            }
+            let fallback = parseFloat(expr.replace(/,/g, ''));
+            return isNaN(fallback) ? 0 : fallback;
+        };
+
+        window.formatEquationInput = function(input) {
+            let val = input.value.replace(/[^0-9.,+\-*/()\s]/g, '');
+            if(input.value !== val) input.value = val;
+            window.handleFormChange();
+        };
+
+        window.evalRouteEquation = function(id, field, el) {
+            const r = routesData.find(r => r.id === id);
+            if(r) {
+                if(el.value.trim() === '') {
+                    r[field] = 0;
+                } else {
+                    let val = window.evaluateMath(el.value);
+                    r[field] = val;
+                }
+                window.calculateRouteTotals();
+                window.handleFormChange();
+                window.renderRoutes();
+            }
+        };
+
+        window.formatFiscalYear = function(input) {
+            let val = input.value.replace(/[^0-9]/g, ''); 
+            if (val.length > 4) val = val.substring(0, 4);
+            if (input.value !== val) input.value = val;
+            window.handleFormChange();
+        };
+
+        window.padFiscalYear = function(input) {
+            let val = input.value;
+            if (val.length > 0 && val.length < 4) {
+                input.value = val.padStart(4, '0');
+            }
+            window.handleFormChange();
+        };
+
         window.formatNumberInput = function(input) {
             let val = input.value.replace(/[^0-9.]/g, ''); 
             const parts = val.split('.');
@@ -697,7 +771,8 @@
                     window.createNewProject(true);
                 } else {
                     renderProjectSelector();
-                    window.renderSummaryTable(); 
+                    window.renderSummaryTable();
+                    window.renderWorkloadTab();
                     if (isInitialLoad && (!activeProjectId || !projects.find(p => p.id === activeProjectId))) {
                         window.switchProject(projects[0].id);
                     } else if (activeProjectId) {
@@ -755,6 +830,7 @@
                 
                 renderProjectSelector();
                 window.renderSummaryTable();
+                window.renderWorkloadTab();
                 
                 btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> บันทึกสำเร็จ!';
                 btn.classList.replace('bg-blue-700', 'bg-emerald-600');
@@ -815,6 +891,7 @@
                 window.switchTab('detail');
                 window.switchProject(newId);
                 window.renderSummaryTable();
+                window.renderWorkloadTab();
             } catch (error) { console.error("Create Error: ", error); }
         };
 
@@ -834,6 +911,7 @@
                 if(projects.length > 0) window.switchProject(projects[0].id);
                 renderProjectSelector();
                 window.renderSummaryTable();
+                window.renderWorkloadTab();
             } catch (error) { console.error("Delete Error: ", error); }
         };
 
@@ -846,41 +924,120 @@
         window.switchTab = function(tabName) {
             const vDetail = document.getElementById('viewDetail');
             const vSummary = document.getElementById('viewSummary');
+            const vWorkload = document.getElementById('viewWorkload');
+            
             const tDetail = document.getElementById('tabDetailBtn');
             const tSummary = document.getElementById('tabSummaryBtn');
+            const tWorkload = document.getElementById('tabWorkloadBtn');
+
+            // Reset all
+            [vDetail, vSummary, vWorkload].forEach(v => v.classList.add('hidden'));
+            [tDetail, tSummary, tWorkload].forEach(t => {
+                t.classList.remove('bg-white', 'border-indigo-600', 'text-indigo-700', 'border-blue-600', 'text-blue-700', 'border-blue-500');
+                t.classList.add('border-transparent', 'text-gray-500', 'hover:bg-gray-50');
+            });
 
             if (tabName === 'summary') {
-                vDetail.classList.add('hidden'); vSummary.classList.remove('hidden');
+                vSummary.classList.remove('hidden');
                 tSummary.classList.replace('border-transparent', 'border-indigo-600');
-                tSummary.classList.replace('text-gray-500', 'text-indigo-700'); tSummary.classList.add('bg-white');
-                tDetail.classList.replace('border-blue-600', 'border-transparent');
-                tDetail.classList.replace('text-blue-700', 'text-gray-500'); tDetail.classList.remove('bg-white');
+                tSummary.classList.replace('text-gray-500', 'text-indigo-700'); 
+                tSummary.classList.remove('hover:bg-gray-50');
+                tSummary.classList.add('bg-white');
                 window.renderSummaryTable();
+            } else if (tabName === 'workload') {
+                vWorkload.classList.remove('hidden');
+                tWorkload.classList.replace('border-transparent', 'border-blue-500');
+                tWorkload.classList.replace('text-gray-500', 'text-blue-700'); 
+                tWorkload.classList.remove('hover:bg-gray-50');
+                tWorkload.classList.add('bg-white');
+                window.renderWorkloadTab();
             } else {
-                vSummary.classList.add('hidden'); vDetail.classList.remove('hidden');
+                vDetail.classList.remove('hidden');
                 tDetail.classList.replace('border-transparent', 'border-blue-600');
-                tDetail.classList.replace('text-gray-500', 'text-blue-700'); tDetail.classList.add('bg-white');
-                tSummary.classList.replace('border-indigo-600', 'border-transparent');
-                tSummary.classList.replace('text-indigo-700', 'text-gray-500'); tSummary.classList.remove('bg-white');
+                tDetail.classList.replace('text-gray-500', 'text-blue-700'); 
+                tDetail.classList.remove('hover:bg-gray-50');
+                tDetail.classList.add('bg-white');
                 setTimeout(() => { window.updateAllSystem(); }, 100); // Trigger chart redraw
             }
         };
 
         function renderProjectSelector() {
-            const selector = document.getElementById('projectSelector');
-            selector.innerHTML = '';
+            const container = document.getElementById('projectDropdownList');
+            if(!container) return;
+            container.innerHTML = '';
             projects.forEach(p => {
-                const option = document.createElement('option');
-                option.value = p.id;
-                option.text = p.name || 'โครงการไม่มีชื่อ';
-                if (p.id === activeProjectId) option.selected = true;
-                selector.appendChild(option);
+                const yearStr = p.fiscalYear ? `[${p.fiscalYear}] ` : '';
+                const projName = p.name || 'โครงการไม่มีชื่อ';
+                const displayText = `${yearStr}${projName}`;
+                
+                const div = document.createElement('div');
+                div.className = `p-2 text-sm cursor-pointer hover:bg-blue-50 border-b border-gray-50 text-gray-700 ${p.id === activeProjectId ? 'bg-blue-100 font-bold text-blue-800' : ''}`;
+                div.innerText = displayText;
+                div.onclick = () => {
+                    document.getElementById('projectSearchInput').value = displayText;
+                    window.toggleProjectDropdown(false);
+                    window.switchProject(p.id);
+                };
+                container.appendChild(div);
+
+                if (p.id === activeProjectId) {
+                    document.getElementById('projectSearchInput').value = displayText;
+                }
             });
         }
 
+        window.toggleProjectDropdown = function(forceState) {
+            const list = document.getElementById('projectDropdownList');
+            if(!list) return;
+            if (typeof forceState === 'boolean') {
+                if (forceState) list.classList.remove('hidden');
+                else list.classList.add('hidden');
+            } else {
+                list.classList.toggle('hidden');
+            }
+            
+            if(!list.classList.contains('hidden')) {
+                window.filterProjectDropdown(); 
+                const input = document.getElementById('projectSearchInput');
+                input.focus();
+                input.select();
+            }
+        };
+
+        window.filterProjectDropdown = function() {
+            const input = document.getElementById('projectSearchInput').value.toLowerCase();
+            const list = document.getElementById('projectDropdownList');
+            if(!list) return;
+            const items = list.children;
+            for (let i = 0; i < items.length; i++) {
+                const text = items[i].innerText.toLowerCase();
+                if (text.includes(input)) {
+                    items[i].style.display = 'block';
+                } else {
+                    items[i].style.display = 'none';
+                }
+            }
+            list.classList.remove('hidden');
+        };
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const container = document.getElementById('projectSelectorContainer');
+            if (container && !container.contains(event.target)) {
+                window.toggleProjectDropdown(false);
+                if(activeProjectId) {
+                    const proj = projects.find(p => p.id === activeProjectId);
+                    if(proj) {
+                        const yearStr = proj.fiscalYear ? `[${proj.fiscalYear}] ` : '';
+                        document.getElementById('projectSearchInput').value = `${yearStr}${proj.name || 'โครงการไม่มีชื่อ'}`;
+                    }
+                }
+            }
+        });
+
         window.switchProject = function(id) {
             if(hasUnsavedChanges && !confirm("คุณมีการแก้ไขที่ยังไม่ได้บันทึก ต้องการสลับหรือไม่?")) {
-                document.getElementById('projectSelector').value = activeProjectId;
+                renderProjectSelector();
                 return;
             }
             activeProjectId = id;
@@ -888,7 +1045,7 @@
             document.getElementById('saveIndicator').innerHTML = '';
             const proj = projects.find(p => p.id === id);
             if (proj) {
-                document.getElementById('projectSelector').value = id;
+                renderProjectSelector();
                 loadProjectDataToUI(proj);
             }
         };
@@ -921,6 +1078,22 @@
                     { id: 'wbs3', name: 'ค่าเตรียมงาน', start: sStr, end: sStr, weight: 0, actualProgress: 0, ref: 'prep' }
                 ];
             }
+
+            // Migration helper for old actual properties to history array format
+            routesData.forEach(r => {
+                if (!r.actualPipeHistory) {
+                    r.actualPipeHistory = [];
+                    if (r.actualPipe > 0) {
+                        r.actualPipeHistory.push({ date: document.getElementById('todayDate').value || new Date().toISOString().split('T')[0], value: r.actualPipe });
+                    }
+                }
+                if (!r.actualRepairHistory) {
+                    r.actualRepairHistory = [];
+                    if (r.actualRepair > 0) {
+                        r.actualRepairHistory.push({ date: document.getElementById('todayDate').value || new Date().toISOString().split('T')[0], value: r.actualRepair });
+                    }
+                }
+            });
 
             window.handleDateChange(); // Recalcs end dates
             window.calculateRouteTotals();
@@ -991,7 +1164,8 @@
         window.addRoute = function() {
             routesData.push({
                 id: 'r_' + Date.now(), name: `เส้นทางที่ ${routesData.length + 1}`, duration: 30, startMonth: 1,
-                pipeLength: 0, pipeValue: 0, actualPipe: 0, repairArea: 0, repairValue: 0, actualRepair: 0, disbursements: []
+                pipeLength: 0, pipeValue: 0, repairArea: 0, repairValue: 0, disbursements: [],
+                actualPipeHistory: [], actualRepairHistory: []
             });
             window.renderRoutes(); window.calculateRouteTotals(); window.handleFormChange();
         };
@@ -1009,8 +1183,55 @@
         };
         window.formatRouteOnBlur = function(id, field, el) {
             if(field !== 'name' && field !== 'duration' && field !== 'startMonth') window.formatNumberOnBlur(el);
-            window.renderRoutes(); // redraw values
+            window.renderRoutes(); 
         };
+        
+        // --- ROUTE ACTUAL HISTORY MANAGEMENT ---
+        window.addRouteHistory = function(rId, type) {
+            const r = routesData.find(r => r.id === rId);
+            if(r) {
+                const histArr = type === 'pipe' ? (r.actualPipeHistory = r.actualPipeHistory || []) : (r.actualRepairHistory = r.actualRepairHistory || []);
+                histArr.push({ date: document.getElementById('todayDate').value || new Date().toISOString().split('T')[0], value: 0 });
+                window.calculateRouteTotals();
+                window.renderRoutes();
+                window.handleFormChange();
+            }
+        };
+        window.removeRouteHistory = function(rId, type, idx) {
+            const r = routesData.find(r => r.id === rId);
+            if(r) {
+                const histArr = type === 'pipe' ? r.actualPipeHistory : r.actualRepairHistory;
+                histArr.splice(idx, 1);
+                window.calculateRouteTotals();
+                window.renderRoutes();
+                window.handleFormChange();
+            }
+        };
+        window.evalHistoryEquation = function(rId, type, idx, el) {
+            const r = routesData.find(r => r.id === rId);
+            if(r) {
+                const histArr = type === 'pipe' ? r.actualPipeHistory : r.actualRepairHistory;
+                if(el.value.trim() === '') {
+                    histArr[idx].value = 0;
+                } else {
+                    histArr[idx].value = window.evaluateMath(el.value);
+                }
+                window.calculateRouteTotals();
+                window.handleFormChange();
+                window.renderRoutes(); 
+            }
+        };
+        window.updateHistoryDate = function(rId, type, idx, val) {
+            const r = routesData.find(r => r.id === rId);
+            if(r) {
+                const histArr = type === 'pipe' ? r.actualPipeHistory : r.actualRepairHistory;
+                histArr[idx].date = val;
+                window.calculateRouteTotals(); 
+                window.handleFormChange();
+            }
+        };
+
+        // --- ROUTE DISBURSEMENTS ---
         window.addDisbursement = function(rId) {
             const r = routesData.find(r => r.id === rId);
             if(r) { if(!r.disbursements) r.disbursements = []; r.disbursements.push({ value: 0, date: '' }); window.renderRoutes(); window.handleFormChange(); }
@@ -1032,8 +1253,13 @@
             let pL=0, pV=0, rA=0, rV=0, apV=0, arV=0, dV=0;
             routesData.forEach(r => {
                 pL+=r.pipeLength||0; pV+=r.pipeValue||0; rA+=r.repairArea||0; rV+=r.repairValue||0;
-                let c_apV = r.pipeLength > 0 ? ((r.actualPipe||0) / r.pipeLength) * (r.pipeValue||0) : 0;
-                let c_arV = r.repairArea > 0 ? ((r.actualRepair||0) / r.repairArea) * (r.repairValue||0) : 0;
+                
+                // Sum actuals from history arrays
+                r.actualPipe = (r.actualPipeHistory || []).reduce((sum, h) => sum + (h.value || 0), 0);
+                r.actualRepair = (r.actualRepairHistory || []).reduce((sum, h) => sum + (h.value || 0), 0);
+
+                let c_apV = r.pipeLength > 0 ? (r.actualPipe / r.pipeLength) * (r.pipeValue||0) : 0;
+                let c_arV = r.repairArea > 0 ? (r.actualRepair / r.repairArea) * (r.repairValue||0) : 0;
                 apV+=c_apV; arV+=c_arV; r.actualPipeValue = c_apV; r.actualRepairValue = c_arV;
                 if(r.disbursements) r.disbursements.forEach(d => dV += (d.value||0));
             });
@@ -1063,6 +1289,22 @@
                         <button type="button" onclick="window.removeDisbursement('${r.id}',${i})" class="text-red-400 hover:text-red-600 mb-1"><i class="fas fa-times text-[10px]"></i></button>
                     </div>`).join('') || '<div class="text-[8px] text-gray-400 text-center py-1">ไม่มีข้อมูลเบิก</div>';
 
+                let pipeHistHtml = (r.actualPipeHistory||[]).map((h, i) => `
+                    <div class="flex gap-1 items-center bg-white p-0.5 rounded border border-blue-100 shadow-sm mt-0.5">
+                        <input type="date" class="text-[8px] p-0.5 border-0 focus:ring-1 focus:ring-blue-300 w-[70px] bg-transparent text-gray-600" value="${h.date}" onchange="window.updateHistoryDate('${r.id}', 'pipe', ${i}, this.value)">
+                        <input type="text" class="text-[9px] p-0.5 border-l border-r border-blue-50 flex-1 text-right text-blue-700 font-bold bg-transparent focus:ring-1 focus:ring-blue-300" value="${formatNum(h.value)}" title="สมการ" oninput="window.formatEquationInput(this)" onchange="window.evalHistoryEquation('${r.id}','pipe',${i},this)">
+                        <button type="button" onclick="window.removeRouteHistory('${r.id}', 'pipe', ${i})" class="text-red-400 hover:text-red-600 px-1"><i class="fas fa-times text-[8px]"></i></button>
+                    </div>
+                `).join('');
+
+                let repairHistHtml = (r.actualRepairHistory||[]).map((h, i) => `
+                    <div class="flex gap-1 items-center bg-white p-0.5 rounded border border-orange-100 shadow-sm mt-0.5">
+                        <input type="date" class="text-[8px] p-0.5 border-0 focus:ring-1 focus:ring-orange-300 w-[70px] bg-transparent text-gray-600" value="${h.date}" onchange="window.updateHistoryDate('${r.id}', 'repair', ${i}, this.value)">
+                        <input type="text" class="text-[9px] p-0.5 border-l border-r border-orange-50 flex-1 text-right text-orange-700 font-bold bg-transparent focus:ring-1 focus:ring-orange-300" value="${formatNum(h.value)}" title="สมการ" oninput="window.formatEquationInput(this)" onchange="window.evalHistoryEquation('${r.id}','repair',${i},this)">
+                        <button type="button" onclick="window.removeRouteHistory('${r.id}', 'repair', ${i})" class="text-red-400 hover:text-red-600 px-1"><i class="fas fa-times text-[8px]"></i></button>
+                    </div>
+                `).join('');
+
                 container.innerHTML += `
                     <div class="bg-purple-50 border border-purple-200 rounded p-2 relative shadow-sm">
                         <div class="flex justify-between items-center border-b border-purple-200 pb-1 mb-1">
@@ -1074,22 +1316,46 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
+                            <!-- งานท่อ -->
                             <div class="bg-white p-1.5 rounded border">
                                 <div class="text-[9px] font-bold text-blue-700 border-b pb-0.5 mb-1"><i class="fas fa-water"></i> ท่อประปา</div>
-                                <div class="grid grid-cols-2 gap-1 text-[8px] text-gray-500">
-                                    <div>แผน (ม.) <input type="text" value="${formatNum(r.pipeLength)}" class="w-full text-right border-b bg-gray-50 p-0.5" oninput="window.updateRoute('${r.id}','pipeLength',this)" onblur="window.formatRouteOnBlur('${r.id}','pipeLength',this)"></div>
-                                    <div>แผน (฿) <input type="text" value="${formatNum(r.pipeValue)}" class="w-full text-right border-b bg-gray-50 p-0.5 text-purple-700" oninput="window.updateRoute('${r.id}','pipeValue',this)" onblur="window.formatRouteOnBlur('${r.id}','pipeValue',this)"></div>
-                                    <div>จริง (ม.) <input type="text" value="${formatNum(r.actualPipe)}" class="w-full text-right border rounded bg-blue-50 p-0.5 text-blue-700 font-bold" oninput="window.updateRoute('${r.id}','actualPipe',this)" onblur="window.formatRouteOnBlur('${r.id}','actualPipe',this)"></div>
-                                    <div class="text-right">คิดเป็นเงิน<br><span class="font-bold text-[10px] text-gray-800">${formatNum(r.actualPipeValue)}</span></div>
+                                <div class="grid grid-cols-2 gap-1 text-[8px] text-gray-500 mb-1">
+                                    <div>แผน (ม.) <input type="text" value="${formatNum(r.pipeLength)}" class="w-full text-right border-b bg-gray-50 p-0.5" title="ใส่สมการได้" oninput="window.formatEquationInput(this)" onchange="window.evalRouteEquation('${r.id}','pipeLength',this)"></div>
+                                    <div>แผน (฿) <input type="text" value="${formatNum(r.pipeValue)}" class="w-full text-right border-b bg-gray-50 p-0.5 text-purple-700" title="ใส่สมการได้" oninput="window.formatEquationInput(this)" onchange="window.evalRouteEquation('${r.id}','pipeValue',this)"></div>
+                                </div>
+                                <div class="bg-blue-50 p-1 rounded border border-blue-100 mt-1">
+                                    <div class="flex justify-between items-center mb-1 border-b border-blue-200 pb-0.5">
+                                        <span class="text-[8px] font-bold text-blue-800">ประวัติผลงานจริง (ม.)</span>
+                                        <button type="button" onclick="window.addRouteHistory('${r.id}', 'pipe')" class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded shadow-sm hover:bg-blue-600 transition"><i class="fas fa-plus"></i> เพิ่ม</button>
+                                    </div>
+                                    <div class="space-y-0.5 mb-1 max-h-24 overflow-y-auto custom-scrollbar pr-1">
+                                        ${pipeHistHtml || '<div class="text-[8px] text-gray-400 text-center italic py-1">ไม่มีข้อมูลประวัติ</div>'}
+                                    </div>
+                                    <div class="flex justify-between items-end pt-1 border-t border-blue-200">
+                                        <span class="text-[8px] text-gray-600">รวม: <span class="font-bold text-blue-800">${formatNum(r.actualPipe)}</span> ม.</span>
+                                        <span class="text-[8px] text-gray-600">เป็นเงิน: <span class="font-bold text-gray-800">${formatNum(r.actualPipeValue)}</span> ฿</span>
+                                    </div>
                                 </div>
                             </div>
+                            <!-- งานซ่อมผิว -->
                             <div class="bg-white p-1.5 rounded border">
                                 <div class="text-[9px] font-bold text-orange-700 border-b pb-0.5 mb-1"><i class="fas fa-road"></i> ซ่อมผิว</div>
-                                <div class="grid grid-cols-2 gap-1 text-[8px] text-gray-500">
-                                    <div>แผน (ตร.ม.) <input type="text" value="${formatNum(r.repairArea)}" class="w-full text-right border-b bg-gray-50 p-0.5" oninput="window.updateRoute('${r.id}','repairArea',this)" onblur="window.formatRouteOnBlur('${r.id}','repairArea',this)"></div>
-                                    <div>แผน (฿) <input type="text" value="${formatNum(r.repairValue)}" class="w-full text-right border-b bg-gray-50 p-0.5 text-purple-700" oninput="window.updateRoute('${r.id}','repairValue',this)" onblur="window.formatRouteOnBlur('${r.id}','repairValue',this)"></div>
-                                    <div>จริง (ตร.ม.) <input type="text" value="${formatNum(r.actualRepair)}" class="w-full text-right border rounded bg-orange-50 p-0.5 text-orange-700 font-bold" oninput="window.updateRoute('${r.id}','actualRepair',this)" onblur="window.formatRouteOnBlur('${r.id}','actualRepair',this)"></div>
-                                    <div class="text-right">คิดเป็นเงิน<br><span class="font-bold text-[10px] text-gray-800">${formatNum(r.actualRepairValue)}</span></div>
+                                <div class="grid grid-cols-2 gap-1 text-[8px] text-gray-500 mb-1">
+                                    <div>แผน (ตร.ม.) <input type="text" value="${formatNum(r.repairArea)}" class="w-full text-right border-b bg-gray-50 p-0.5" title="ใส่สมการได้" oninput="window.formatEquationInput(this)" onchange="window.evalRouteEquation('${r.id}','repairArea',this)"></div>
+                                    <div>แผน (฿) <input type="text" value="${formatNum(r.repairValue)}" class="w-full text-right border-b bg-gray-50 p-0.5 text-purple-700" title="ใส่สมการได้" oninput="window.formatEquationInput(this)" onchange="window.evalRouteEquation('${r.id}','repairValue',this)"></div>
+                                </div>
+                                <div class="bg-orange-50 p-1 rounded border border-orange-100 mt-1">
+                                    <div class="flex justify-between items-center mb-1 border-b border-orange-200 pb-0.5">
+                                        <span class="text-[8px] font-bold text-orange-800">ประวัติผลงานจริง (ตร.ม.)</span>
+                                        <button type="button" onclick="window.addRouteHistory('${r.id}', 'repair')" class="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600 transition"><i class="fas fa-plus"></i> เพิ่ม</button>
+                                    </div>
+                                    <div class="space-y-0.5 mb-1 max-h-24 overflow-y-auto custom-scrollbar pr-1">
+                                        ${repairHistHtml || '<div class="text-[8px] text-gray-400 text-center italic py-1">ไม่มีข้อมูลประวัติ</div>'}
+                                    </div>
+                                    <div class="flex justify-between items-end pt-1 border-t border-orange-200">
+                                        <span class="text-[8px] text-gray-600">รวม: <span class="font-bold text-orange-800">${formatNum(r.actualRepair)}</span></span>
+                                        <span class="text-[8px] text-gray-600">เป็นเงิน: <span class="font-bold text-gray-800">${formatNum(r.actualRepairValue)}</span> ฿</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1163,6 +1429,113 @@
         };
         window.getOverallActual = function(tList = tasks) {
             return tList.reduce((s, t) => s + (t.actualProgress * t.weight)/100, 0);
+        };
+
+        // Custom Historical Actual progress function to rebuild the S-Curve dynamically
+        window.getHistoricalActualData = function(startDate, checkDate, totalDays) {
+            let historyEvents = [];
+            routesData.forEach(r => {
+                (r.actualPipeHistory || []).forEach(h => {
+                    if (h.date && h.value) historyEvents.push({ date: new Date(h.date), type: 'pipe', routeId: r.id, value: h.value });
+                });
+                (r.actualRepairHistory || []).forEach(h => {
+                    if (h.date && h.value) historyEvents.push({ date: new Date(h.date), type: 'repair', routeId: r.id, value: h.value });
+                });
+            });
+
+            historyEvents.sort((a, b) => a.date - b.date);
+
+            const msDay = 86400000;
+            const tStart = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
+            let dataPoints = [{ x: 0, y: 0, customLabel: `เริ่มงาน (${formatDateShort(startDate)})`, rawDate: startDate.getTime() }];
+            
+            let currentPipeValues = {}; 
+            let currentRepairValues = {}; 
+
+            let manualActualOverall = 0;
+            tasks.forEach(t => {
+                if (t.ref !== 'pipe' && t.ref !== 'repair') {
+                    manualActualOverall += (t.actualProgress * t.weight) / 100;
+                }
+            });
+
+            const computeOverallAt = () => {
+                let totalPipeVal = 0, totalRepairVal = 0;
+                let pipePlan = 0, repairPlan = 0;
+                routesData.forEach(r => {
+                    pipePlan += r.pipeValue || 0;
+                    repairPlan += r.repairValue || 0;
+                    let pDone = currentPipeValues[r.id] || 0;
+                    let rDone = currentRepairValues[r.id] || 0;
+                    if(r.pipeLength > 0) totalPipeVal += (pDone / r.pipeLength) * (r.pipeValue || 0);
+                    if(r.repairArea > 0) totalRepairVal += (rDone / r.repairArea) * (r.repairValue || 0);
+                });
+
+                let totalPlanVal = getNumValue('contractAmount');
+                if (totalPlanVal <= 0) return 0;
+
+                let pipeTask = tasks.find(t => t.ref === 'pipe');
+                let repairTask = tasks.find(t => t.ref === 'repair');
+                
+                let pipeActPct = pipePlan > 0 ? (totalPipeVal / pipePlan) * 100 : 0;
+                let repairActPct = repairPlan > 0 ? (totalRepairVal / repairPlan) * 100 : 0;
+
+                let overall = 0;
+                if(pipeTask) overall += (pipeTask.weight * pipeActPct) / 100;
+                if(repairTask) overall += (repairTask.weight * repairActPct) / 100;
+                return overall; 
+            };
+
+            historyEvents.forEach(ev => {
+                if(ev.date <= checkDate) {
+                    if(ev.type === 'pipe') {
+                        currentPipeValues[ev.routeId] = (currentPipeValues[ev.routeId] || 0) + ev.value;
+                    } else {
+                        currentRepairValues[ev.routeId] = (currentRepairValues[ev.routeId] || 0) + ev.value;
+                    }
+                    
+                    let eDays = Math.floor((Date.UTC(ev.date.getFullYear(), ev.date.getMonth(), ev.date.getDate()) - tStart) / msDay) + 1;
+                    let xPct = Math.max(0, (eDays / totalDays) * 100);
+                    
+                    // Ratio to softly add manual tasks based on timeline
+                    let todayEDays = Math.floor((Date.UTC(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate()) - tStart) / msDay) + 1;
+                    let todayXPct = Math.max(0, (todayEDays / totalDays) * 100);
+                    let manualRatio = todayXPct > 0 ? Math.min(1, xPct / todayXPct) : 0;
+
+                    dataPoints.push({
+                        x: xPct,
+                        y: computeOverallAt() + (manualActualOverall * manualRatio),
+                        customLabel: `📍 ผลงาน (${formatDateShort(ev.date)})`,
+                        rawDate: ev.date.getTime()
+                    });
+                }
+            });
+
+            // Ensure last point aligns exactly with current total calculation to prevent jumps
+            let todayEDays = Math.floor((Date.UTC(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate()) - tStart) / msDay) + 1;
+            let checkTimePct = Math.max(0, (todayEDays / totalDays) * 100);
+
+            dataPoints.push({
+                x: checkTimePct,
+                y: window.getOverallActual(),
+                customLabel: `📍 วันที่ประเมิน (${formatDateShort(checkDate)})`,
+                rawDate: checkDate.getTime()
+            });
+
+            // Deduplicate points for the chart (taking highest actual progress per distinct timeline %)
+            let uniquePoints = {};
+            dataPoints.forEach(pt => {
+                if (!uniquePoints[pt.x] || uniquePoints[pt.x].y < pt.y) {
+                    uniquePoints[pt.x] = pt;
+                }
+            });
+
+            let finalArr = Object.values(uniquePoints).sort((a,b) => a.x - b.x);
+            if(finalArr.length > 0) finalArr[0].customLabel = `เริ่มงาน (${formatDateShort(startDate)})`;
+            if(finalArr.length > 1) finalArr[finalArr.length - 1].customLabel = `📍 วันที่ประเมิน (${formatDateShort(checkDate)})`;
+
+            return finalArr.map(pt => ({ x: pt.x, y: pt.y, customLabel: pt.customLabel }));
         };
 
         window.renderWBSTable = function() {
@@ -1277,18 +1650,14 @@
                     customLabel: `📅 แผนงาน (${formatDateShort(t)})`
                 });
             }
-            
-            const msDay = 86400000;
-            const t1 = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-            const t2 = Date.UTC(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
-            let elapsed = Math.floor((t2 - t1)/msDay) + 1;
-            let checkTimePct = Math.max(0, (elapsed / totalDays) * 100);
 
-            const actualDataset = [{x:0, y:0, customLabel: `เริ่มงาน (${formatDateShort(startDate)})`}, {x:checkTimePct, y:actPct, customLabel: `📍 วันที่ประเมิน (${formatDateShort(checkDate)})`}];
+            // Using our new historical data collector
+            const actualDataset = window.getHistoricalActualData(startDate, checkDate, totalDays);
 
             let eventsData = [];
-            if (isW124) {
-                eventsData.push({ x: checkTimePct, y: actPct, customLabel: `🚨 เข้าข่าย ว124` });
+            if (isW124 && actualDataset.length > 0) {
+                const lastPt = actualDataset[actualDataset.length - 1];
+                eventsData.push({ x: lastPt.x, y: lastPt.y, customLabel: `🚨 เข้าข่าย ว124` });
             }
 
             if (sCurveChartInstance) sCurveChartInstance.destroy();
@@ -1305,7 +1674,7 @@
                     responsive: true, maintainAspectRatio: false,
                     scales: {
                         y: { beginAtZero: true, max: 100, title: { display: true, text: 'ผลงาน (%)', font: {family: 'Sarabun'} } },
-                        x: { type: 'linear', min: 0, max: Math.max(105, checkTimePct+5), title: { display: true, text: 'ระยะเวลาที่ล่วงเลยไป (%)', font: {family: 'Sarabun'} }, ticks: { callback: v => v+'%', stepSize: 25 } }
+                        x: { type: 'linear', min: 0, max: Math.max(105, (actualDataset[actualDataset.length-1]?.x || 0)+5), title: { display: true, text: 'ระยะเวลาที่ล่วงเลยไป (%)', font: {family: 'Sarabun'} }, ticks: { callback: v => v+'%', stepSize: 25 } }
                     },
                     plugins: {
                         annotation: {
@@ -1342,7 +1711,7 @@
                 { id: 'chk_2', title: 'อนุมัติวัสดุ/แผนงาน', date: new Date(t_s + (15*86400000)), desc: '15 วันแรก' },
                 { id: 'chk_w2', title: 'แจ้งเร่งรัด (ข้อ 2.1.2)', date: new Date(t_s + (dur/3)), desc: 'งานล่าช้า 1/3 สัญญา' },
                 { id: 'chk_3', title: 'ประเมิน 50% (Mid-Term)', date: new Date(t_s + (dur/2)), desc: 'ผ่านครึ่งทาง' },
-                { id: 'chk_new', title: 'ขอตรวจสภาพคืนท่อซาก', date: new Date(t_e - (45*86400000)), desc: 'ก่อนหมด 45 วัน' },
+                { id: 'chk_new', title: 'ส่งขอใบตรวจรับสภาพ/ส่งคืนท่อ และอุปกรณ์ที่เหลือใช้ และซาก คืน กปน.', date: new Date(t_e - (45*86400000)), desc: 'ก่อนหมด 45 วัน' },
                 { id: 'chk_4', title: 'เตือนใกล้สิ้นสุด', date: new Date(t_e - (30*86400000)), desc: 'ก่อนหมด 30 วัน' },
                 { id: 'chk_5', title: 'สิ้นสุดสัญญาจ้าง', date: endDate, desc: 'ครบกำหนด' }
             ];
@@ -1357,15 +1726,36 @@
                 let bCls = isLaw&&!isChecked ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100';
                 if(isChecked) bCls = 'bg-gray-50 opacity-80'; else if(isOverdue&&!isLaw) bCls = 'bg-white border-red-100';
 
+                const subItems = itemData.subItems || [];
+                const subItemsHtml = subItems.map((sub, idx) => `
+                    <div class="flex gap-1 items-center mt-1 relative group">
+                        <div class="absolute -left-2.5 top-1/2 w-2 border-t border-dashed border-purple-300"></div>
+                        <input type="text" placeholder="รายละเอียดย่อย..." class="text-[9px] border p-1 rounded flex-[4] w-0 bg-white focus:ring focus:ring-purple-200" value="${sub.detail||''}" onchange="window.updateChecklistSubItem('${t.id}', ${idx}, 'detail', this.value)">
+                        <input type="text" placeholder="เลขเอกสาร" class="text-[9px] border p-1 rounded flex-[2.5] w-0 bg-white focus:ring focus:ring-purple-200" value="${sub.doc||''}" onchange="window.updateChecklistSubItem('${t.id}', ${idx}, 'doc', this.value)">
+                        <input type="date" class="text-[9px] border p-1 rounded flex-[2.5] w-0 bg-white focus:ring focus:ring-purple-200" value="${sub.date||''}" onchange="window.updateChecklistSubItem('${t.id}', ${idx}, 'date', this.value)">
+                        <button type="button" onclick="window.removeChecklistSubItem('${t.id}', ${idx})" class="text-red-400 hover:text-red-600 px-1 flex-[1] w-0 text-center" title="ลบรายการย่อย"><i class="fas fa-trash text-[9px]"></i></button>
+                    </div>
+                `).join('');
+
                 container.innerHTML += `
-                    <div class="flex items-start gap-2 p-2 border rounded shadow-sm ${bCls}">
+                    <div class="flex items-start gap-2 p-2 border rounded shadow-sm transition-all ${bCls}">
                         <input type="checkbox" id="${t.id}" class="mt-1 w-4 h-4 cursor-pointer rounded text-purple-600" ${isChecked?'checked':''} onchange="window.toggleChecklist('${t.id}')">
-                        <div class="flex-1">
+                        <div class="flex-1 overflow-hidden">
                             <label for="${t.id}" class="text-[11px] font-bold ${isChecked?'line-through text-gray-400':(isOverdue?'text-red-600':'text-gray-700')} cursor-pointer">${isLaw&&!isChecked?'<i class="fas fa-gavel text-red-500"></i> ':''}${t.title}</label>
                             <div class="text-[9px] text-gray-500 mt-0.5">กำหนด: ${formatDateShort(t.date)} | ${t.desc}</div>
-                            <div class="flex gap-2 mt-1 ${isChecked?'':'opacity-50 pointer-events-none'}">
-                                <input type="text" placeholder="เลขเอกสาร" class="text-[9px] border p-1 rounded w-1/2 bg-transparent" value="${itemData.doc||''}" onchange="window.updateChecklistDetail('${t.id}','doc',this.value)">
-                                <input type="date" class="text-[9px] border p-1 rounded w-1/2 bg-transparent" value="${itemData.date||''}" onchange="window.updateChecklistDetail('${t.id}','date',this.value)">
+                            
+                            <div class="flex flex-col gap-1 mt-1.5 ${isChecked?'':'opacity-60 pointer-events-none transition-opacity'}">
+                                <!-- Main Item Input -->
+                                <div class="flex gap-1 items-center">
+                                    <input type="text" placeholder="รายละเอียดงาน..." class="text-[9px] border p-1 rounded flex-[4] w-0 bg-transparent focus:bg-white focus:ring focus:ring-purple-200" value="${itemData.detail||''}" onchange="window.updateChecklistDetail('${t.id}','detail',this.value)">
+                                    <input type="text" placeholder="เลขเอกสาร" class="text-[9px] border p-1 rounded flex-[2.5] w-0 bg-transparent focus:bg-white focus:ring focus:ring-purple-200" value="${itemData.doc||''}" onchange="window.updateChecklistDetail('${t.id}','doc',this.value)">
+                                    <input type="date" class="text-[9px] border p-1 rounded flex-[2.5] w-0 bg-transparent focus:bg-white focus:ring focus:ring-purple-200" value="${itemData.date||''}" onchange="window.updateChecklistDetail('${t.id}','date',this.value)">
+                                    <button type="button" onclick="window.addChecklistSubItem('${t.id}')" class="text-[9px] bg-purple-100 text-purple-700 flex-[1] w-0 py-1 rounded hover:bg-purple-200 flex justify-center items-center transition-colors" title="เพิ่มรายการย่อย"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <!-- Sub Items Container -->
+                                <div class="${subItems.length > 0 ? 'mt-1 pl-3 border-l border-dashed border-purple-300 ml-1 pb-1' : ''}">
+                                    ${subItemsHtml}
+                                </div>
                             </div>
                         </div>
                     </div>`;
@@ -1379,9 +1769,32 @@
             if(cb.checked && !window.userInputsCache.checklist[id].date) window.userInputsCache.checklist[id].date = document.getElementById('todayDate').value;
             window.updateAllSystem(); window.handleFormChange();
         };
+
         window.updateChecklistDetail = function(id, f, v) {
             if(!window.userInputsCache.checklist[id]) window.userInputsCache.checklist[id] = {};
             window.userInputsCache.checklist[id][f] = v; window.handleFormChange();
+        };
+
+        window.addChecklistSubItem = function(taskId) {
+            if (!window.userInputsCache.checklist[taskId]) window.userInputsCache.checklist[taskId] = {};
+            if (!window.userInputsCache.checklist[taskId].subItems) window.userInputsCache.checklist[taskId].subItems = [];
+            window.userInputsCache.checklist[taskId].subItems.push({ detail: '', doc: '', date: '' });
+            window.updateAllSystem(); 
+            window.handleFormChange();
+        };
+
+        window.updateChecklistSubItem = function(taskId, idx, field, val) {
+            if (!window.userInputsCache.checklist[taskId]) return;
+            if (!window.userInputsCache.checklist[taskId].subItems[idx]) return;
+            window.userInputsCache.checklist[taskId].subItems[idx][field] = val;
+            window.handleFormChange();
+        };
+
+        window.removeChecklistSubItem = function(taskId, idx) {
+            if (!window.userInputsCache.checklist[taskId] || !window.userInputsCache.checklist[taskId].subItems) return;
+            window.userInputsCache.checklist[taskId].subItems.splice(idx, 1);
+            window.updateAllSystem();
+            window.handleFormChange();
         };
 
         // --- SUMMARY TAB ---
@@ -1398,7 +1811,35 @@
 
             const pTasks = p.tasks || [];
             const plan = window.getOverallPlanned(cd, pTasks);
-            const act = window.getOverallActual(pTasks);
+            
+            // To ensure summary uses the accumulated history just like detailed view:
+            let computedActual = 0;
+            let currentPipeValues = {}, currentRepairValues = {};
+            (p.routesData || []).forEach(r => {
+                let pD = 0, rD = 0;
+                (r.actualPipeHistory || []).forEach(h => { if(new Date(h.date) <= cd) pD += (h.value || 0); });
+                (r.actualRepairHistory || []).forEach(h => { if(new Date(h.date) <= cd) rD += (h.value || 0); });
+                let pPlan = r.pipeValue || 0, rPlan = r.repairValue || 0;
+                let c_apV = r.pipeLength > 0 ? (pD / r.pipeLength) * pPlan : 0;
+                let c_arV = r.repairArea > 0 ? (rD / r.repairArea) * rPlan : 0;
+                
+                let pTask = pTasks.find(t => t.ref === 'pipe');
+                let rTask = pTasks.find(t => t.ref === 'repair');
+                
+                // Add proportional weight
+                let totalPlan = parseFloat((p.contractAmount || '0').replace(/,/g, '')) || 1;
+                if(pTask) computedActual += (pTask.weight * (pPlan > 0 ? (c_apV / pPlan)*100 : 0)) / 100;
+                if(rTask) computedActual += (rTask.weight * (rPlan > 0 ? (c_arV / rPlan)*100 : 0)) / 100;
+            });
+            
+            // Add manual task progress
+            pTasks.forEach(t => {
+                if (t.ref !== 'pipe' && t.ref !== 'repair') {
+                    computedActual += (t.actualProgress * t.weight) / 100;
+                }
+            });
+
+            const act = computedActual;
             const variance = (act - plan).toFixed(2);
             
             // Cloud S-Curve & Checklist W124 Logic Application
@@ -1689,7 +2130,7 @@
                 });
             }
 
-            if(data.length===0) return tb.innerHTML = '<tr><td colspan="11" class="text-center p-4 text-gray-500">ไม่มีข้อมูล</td></tr>';
+            if(data.length===0) return tb.innerHTML = '<tr><td colspan="12" class="text-center p-4 text-gray-500">ไม่มีข้อมูล</td></tr>';
 
             data.forEach((d, i) => {
                 tb.innerHTML += `
@@ -1698,9 +2139,12 @@
                         <td class="p-2 font-semibold text-indigo-900 cursor-pointer hover:text-indigo-600" onclick="window.switchProject('${d.id}'); window.switchTab('detail');">
                             ${d.contractName || '-'}
                             <div class="text-[10px] text-gray-600 font-normal mt-0.5" title="${d.name || '-'}">${d.name || '-'}</div>
-                            <div class="text-[9px] text-emerald-600 font-normal mt-0.5">${d.budgetType || 'ไม่ระบุประเภท'} (${d.fiscalYear || '-'})</div>
                         </td>
                         <td class="p-2 text-xs">${d.supervisorNameDisplay}</td>
+                        <td class="p-2 text-center text-xs">
+                            <span class="font-bold text-emerald-700">${d.fiscalYear || '-'}</span>
+                            <div class="text-[9px] text-gray-500 font-normal mt-0.5">${d.budgetType || 'ไม่ระบุ'}</div>
+                        </td>
                         <td class="p-2 text-right text-xs">${d.contractAmount}</td>
                         <td class="p-2 text-right text-xs font-semibold text-emerald-700">${d.remainingAmountText}</td>
                         <td class="p-2 text-center text-xs">${formatDateShort(new Date(d.endDate))}</td>
@@ -1712,6 +2156,101 @@
                     </tr>`;
             });
             document.getElementById('summaryUpdateTime').innerText = n.toLocaleString('th-TH');
+        };
+
+        // --- WORKLOAD TAB ---
+        window.renderWorkloadTab = function() {
+            const container = document.getElementById('workloadCardsContainer');
+            container.innerHTML = '';
+            
+            let data = projects.map(p => window.getProjectSummaryData(p)).filter(Boolean);
+            let supervisorData = {};
+            
+            data.forEach(d => {
+                const supName = d.supervisorNameDisplay;
+                const budgetKey = d.budgetType && d.budgetType.trim() !== '' ? d.budgetType.trim() : 'ไม่ระบุประเภท';
+                const remaining = d.remainingAmount || 0;
+                
+                if (!supervisorData[supName]) {
+                    supervisorData[supName] = { count: 0, totalAmount: 0, totalRemaining: 0, budgets: {}, projects: [] };
+                }
+                supervisorData[supName].count++;
+                supervisorData[supName].totalAmount += d.contractAmountRaw || 0;
+                supervisorData[supName].totalRemaining += remaining;
+                
+                if (!supervisorData[supName].budgets[budgetKey]) {
+                    supervisorData[supName].budgets[budgetKey] = { count: 0, amount: 0, remaining: 0 };
+                }
+                supervisorData[supName].budgets[budgetKey].count++;
+                supervisorData[supName].budgets[budgetKey].amount += d.contractAmountRaw || 0;
+                supervisorData[supName].budgets[budgetKey].remaining += remaining;
+                
+                supervisorData[supName].projects.push(d);
+            });
+            
+            const sortedSups = Object.entries(supervisorData).sort((a, b) => b[1].totalAmount - a[1].totalAmount);
+            
+            if(sortedSups.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500 p-8 bg-gray-50 rounded border border-dashed">ไม่มีข้อมูลผู้ควบคุมงาน</div>';
+                return;
+            }
+            
+            sortedSups.forEach(([name, sData]) => {
+                // Generate Mini Projects List
+                sData.projects.sort((a, b) => b.contractAmountRaw - a.contractAmountRaw);
+                let projectsHtml = sData.projects.map(p => `
+                    <div class="text-[10px] flex justify-between items-start border-b border-gray-200 py-1.5 last:border-0 hover:bg-indigo-50 cursor-pointer transition-colors px-1" onclick="window.switchProject('${p.id}'); window.switchTab('detail');">
+                        <div class="flex-1 pr-2">
+                            <div class="text-indigo-800 font-semibold" title="${p.name}">${p.contractName}</div>
+                            <div class="text-[9px] text-gray-500">${p.budgetType || 'ไม่ระบุ'} (${p.fiscalYear || '-'})</div>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <div class="text-gray-700 font-bold">${p.contractAmount} ฿</div>
+                            <div class="text-[9px] ${p.remainingAmount > 0 ? 'text-emerald-600' : 'text-gray-400'}">เหลือ: ${p.remainingAmountText} ฿</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Generate Budget Breakdown List
+                let budgetHtml = Object.entries(sData.budgets).map(([bName, bData]) => `
+                    <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-blue-100 first:border-0 first:pt-0 first:mt-0">
+                        <span class="text-blue-800"><i class="fa-solid fa-caret-right text-blue-400 mr-1"></i> ${bName} (${bData.count})</span>
+                        <span class="text-gray-700 font-semibold">${bData.amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                    </div>
+                `).join('');
+
+                container.innerHTML += `
+                    <div class="bg-white border border-blue-200 rounded-lg shadow-sm hover:shadow-md transition flex flex-col overflow-hidden">
+                        <div class="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
+                            <span class="text-blue-900 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-user-tie text-blue-500 text-lg"></i> ${name}</span>
+                            <span class="bg-blue-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${sData.count} โครงการ</span>
+                        </div>
+                        <div class="p-3 flex-1 flex flex-col gap-2">
+                            <div class="flex justify-between text-xs border-b border-gray-100 pb-2">
+                                <span class="text-gray-500 font-semibold">มูลค่างานรวม:</span>
+                                <span class="text-gray-800 font-bold text-sm">${sData.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                            </div>
+                            <div class="flex justify-between text-xs border-b border-gray-100 pb-2">
+                                <span class="text-gray-500 font-semibold">วงเงินคงเหลือรวม:</span>
+                                <span class="text-emerald-600 font-bold">${sData.totalRemaining.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿</span>
+                            </div>
+                            <div class="bg-blue-50/50 p-2 rounded border border-blue-100">
+                                <div class="text-[10px] font-bold text-gray-700 mb-1.5 border-b border-blue-200 pb-1">แยกตามประเภทงบประมาณ</div>
+                                ${budgetHtml}
+                            </div>
+                            <div class="mt-2 flex-1 flex flex-col">
+                                <div class="text-[10px] font-bold text-gray-700 mb-1 bg-gray-100 px-2 py-1 rounded flex justify-between">
+                                    <span>รายการสัญญาที่รับผิดชอบ</span>
+                                    <span class="text-gray-500 font-normal">คลิกเพื่อดูรายละเอียด</span>
+                                </div>
+                                <div class="max-h-[180px] overflow-y-auto custom-scrollbar border border-gray-200 rounded">
+                                    ${projectsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
         };
 
         window.setEndingMonthFilter = function(type) {
@@ -1742,10 +2281,10 @@
         };
 
         window.exportSummaryCSV = function() {
-            let csv = "\uFEFFลำดับ,ชื่อโครงการ,เลขที่สัญญา,ผู้ควบคุมงาน,วงเงิน(บาท),คงเหลือ(บาท),สิ้นสุด,แผน%,จริง%,สถานะ\r\n";
+            let csv = "\uFEFFลำดับ,ชื่อโครงการ,เลขที่สัญญา,ผู้ควบคุมงาน,ปีงบประมาณ,ประเภทงบประมาณ,วงเงิน(บาท),คงเหลือ(บาท),สิ้นสุด,แผน%,จริง%,สถานะ\r\n";
             projects.forEach((p,i) => {
                 let s = window.getProjectSummaryData(p);
-                if(s) csv += `${i+1},"${s.name}","${s.contractName}","${s.supervisorNameDisplay}",${s.contractAmountRaw},${s.remainingAmount},"${formatDateFull(new Date(s.endDate))}",${s.plan},${s.actual},"${s.status}"\r\n`;
+                if(s) csv += `${i+1},"${s.name}","${s.contractName}","${s.supervisorNameDisplay}","${s.fiscalYear}","${s.budgetType}",${s.contractAmountRaw},${s.remainingAmount},"${formatDateFull(new Date(s.endDate))}",${s.plan},${s.actual},"${s.status}"\r\n`;
             });
             const link = document.createElement("a"); link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
             link.download = `Summary_W124_${new Date().toISOString().split('T')[0]}.csv`; link.click();
@@ -1754,5 +2293,3 @@
     </script>
 </body>
 </html>
-
-
