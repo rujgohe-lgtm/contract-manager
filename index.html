@@ -78,6 +78,9 @@
             <button onclick="window.switchTab('workload')" id="tabWorkloadBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
                 <i class="fa-solid fa-users-gear"></i> ภาระงาน (ผู้ควบคุมงาน)
             </button>
+            <button onclick="window.switchTab('warranty')" id="tabWarrantyBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
+                <i class="fa-solid fa-shield-halved"></i> ค้ำประกันผลงาน
+            </button>
             <button onclick="window.switchTab('detail')" id="tabDetailBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
                 <i class="fa-solid fa-list-check"></i> รายละเอียดโครงการ
             </button>
@@ -580,6 +583,26 @@
             </div>
         </div>
 
+        <!-- ======================= TAB 4: ค้ำประกันผลงาน (Warranty Dashboard) ======================= -->
+        <div id="viewWarranty" class="lg:col-span-12 w-full hidden">
+            <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-amber-500">
+                <div class="flex justify-between items-center mb-6 border-b pb-3">
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-amber-800"><i class="fa-solid fa-shield-halved"></i> สรุปวันหมดค้ำประกันผลงาน</h2>
+                </div>
+                
+                <!-- This Month & Next Month Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6" id="warrantyUrgentCards">
+                    <!-- Injected by JS -->
+                </div>
+
+                <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-calendar-days text-amber-500"></i> แยกตามปีที่หมดค้ำประกัน</h3>
+                <!-- Grid by Year -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" id="warrantyYearCards">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Modal ยืนยันการลบ -->
@@ -776,6 +799,7 @@
                     renderProjectSelector();
                     window.renderSummaryTable();
                     window.renderWorkloadTab();
+                    if(window.renderWarrantyTab) window.renderWarrantyTab();
                     if (isInitialLoad && (!activeProjectId || !projects.find(p => p.id === activeProjectId))) {
                         // Clear the UI on initial load to prompt selection
                         window.clearProjectDataUI();
@@ -837,6 +861,7 @@
                 renderProjectSelector();
                 window.renderSummaryTable();
                 window.renderWorkloadTab();
+                if(window.renderWarrantyTab) window.renderWarrantyTab();
                 
                 btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> บันทึกสำเร็จ!';
                 btn.classList.replace('bg-blue-700', 'bg-emerald-600');
@@ -899,6 +924,7 @@
                 window.switchProject(newId);
                 window.renderSummaryTable();
                 window.renderWorkloadTab();
+                if(window.renderWarrantyTab) window.renderWarrantyTab();
             } catch (error) { console.error("Create Error: ", error); }
         };
 
@@ -920,6 +946,7 @@
                 renderProjectSelector();
                 window.renderSummaryTable();
                 window.renderWorkloadTab();
+                if(window.renderWarrantyTab) window.renderWarrantyTab();
             } catch (error) { console.error("Delete Error: ", error); }
         };
 
@@ -933,16 +960,20 @@
             const vDetail = document.getElementById('viewDetail');
             const vSummary = document.getElementById('viewSummary');
             const vWorkload = document.getElementById('viewWorkload');
+            const vWarranty = document.getElementById('viewWarranty');
             
             const tDetail = document.getElementById('tabDetailBtn');
             const tSummary = document.getElementById('tabSummaryBtn');
             const tWorkload = document.getElementById('tabWorkloadBtn');
+            const tWarranty = document.getElementById('tabWarrantyBtn');
 
             // Reset all
-            [vDetail, vSummary, vWorkload].forEach(v => v.classList.add('hidden'));
-            [tDetail, tSummary, tWorkload].forEach(t => {
-                t.classList.remove('bg-white', 'border-indigo-600', 'text-indigo-700', 'border-blue-600', 'text-blue-700', 'border-blue-500');
-                t.classList.add('border-transparent', 'text-gray-500', 'hover:bg-gray-50');
+            [vDetail, vSummary, vWorkload, vWarranty].forEach(v => { if(v) v.classList.add('hidden') });
+            [tDetail, tSummary, tWorkload, tWarranty].forEach(t => {
+                if(t) {
+                    t.classList.remove('bg-white', 'border-indigo-600', 'text-indigo-700', 'border-blue-600', 'text-blue-700', 'border-blue-500', 'border-amber-500', 'text-amber-700');
+                    t.classList.add('border-transparent', 'text-gray-500', 'hover:bg-gray-50');
+                }
             });
 
             if (tabName === 'summary') {
@@ -959,6 +990,13 @@
                 tWorkload.classList.remove('hover:bg-gray-50');
                 tWorkload.classList.add('bg-white');
                 window.renderWorkloadTab();
+            } else if (tabName === 'warranty') {
+                vWarranty.classList.remove('hidden');
+                tWarranty.classList.replace('border-transparent', 'border-amber-500');
+                tWarranty.classList.replace('text-gray-500', 'text-amber-700'); 
+                tWarranty.classList.remove('hover:bg-gray-50');
+                tWarranty.classList.add('bg-white');
+                if(window.renderWarrantyTab) window.renderWarrantyTab();
             } else {
                 vDetail.classList.remove('hidden');
                 tDetail.classList.replace('border-transparent', 'border-blue-600');
@@ -1856,15 +1894,39 @@
         window.renderChecklist = function(startDate, endDate, checkDate, isW124, w124Reason) {
             const container = document.getElementById('checklistContainer'); container.innerHTML = '';
             const t_s = startDate.getTime(); const t_e = endDate.getTime(); const dur = t_e - t_s;
+            
+            // ฟังก์ชันคำนวณวันทำการ (ข้ามเสาร์-อาทิตย์)
+            const addWorkDays = (dateMs, days) => {
+                let d = new Date(dateMs);
+                let added = 0;
+                while (added < days) {
+                    d.setDate(d.getDate() + 1);
+                    if (d.getDay() !== 0 && d.getDay() !== 6) added++;
+                }
+                return d;
+            };
+
+            // คำนวณวันสิ้นสุดประกันผลงาน (2 ปี นับจากวันตรวจรับ)
+            let baseAcceptanceDate = addWorkDays(t_e, 3); // ค่าเริ่มต้นคือ 3 วันทำการหลังสิ้นสุดสัญญา
+            const chk6Data = window.userInputsCache.checklist['chk_6']; // ดึงข้อมูลวันตรวจรับจริง (ถ้ามีการกรอกไว้)
+            if (chk6Data && chk6Data.checked && chk6Data.date) {
+                const parsedDate = new Date(chk6Data.date);
+                if (!isNaN(parsedDate.getTime())) baseAcceptanceDate = parsedDate;
+            }
+            let warrantyEndDate = new Date(baseAcceptanceDate);
+            warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 2); // บวกเพิ่ม 2 ปี
+
             const cList = [
-                { id: 'chk_1', title: 'ลงนามส่งมอบพื้นที่', date: startDate, desc: 'เริ่มงาน' },
+                { id: 'chk_1', title: 'ลงนามส่งมอบพื้นที่/เริ่มงาน', date: startDate, desc: 'เริ่มงาน' },
                 { id: 'chk_w1', title: 'แจ้งเร่งรัด (ข้อ 2.1.1)', date: new Date(t_s + (15*86400000)), desc: '15 วันแรกถ้าไม่เข้างาน' },
-                { id: 'chk_2', title: 'อนุมัติวัสดุ/แผนงาน', date: new Date(t_s + (15*86400000)), desc: '15 วันแรก' },
+                { id: 'chk_2', title: 'ผรจ. เสนอแผนงาน/ขออนุมัติวัสดุ', date: new Date(t_s + (15*86400000)), desc: '15 วันแรก' },
                 { id: 'chk_w2', title: 'แจ้งเร่งรัด (ข้อ 2.1.2)', date: new Date(t_s + (dur/3)), desc: 'งานล่าช้า 1/3 สัญญา' },
-                { id: 'chk_3', title: 'ประเมิน 50% (Mid-Term)', date: new Date(t_s + (dur/2)), desc: 'ผ่านครึ่งทาง' },
+                { id: 'chk_3', title: 'ประเมินความก้าวหน้าครึ่งทาง (Mid-Term)', date: new Date(t_s + (dur/2)), desc: 'ผ่านครึ่งทาง' },
                 { id: 'chk_new', title: 'ส่งขอใบตรวจรับสภาพ/ส่งคืนท่อ และอุปกรณ์ที่เหลือใช้ และซาก คืน กปน.', date: new Date(t_e - (45*86400000)), desc: 'ก่อนหมด 45 วัน' },
-                { id: 'chk_4', title: 'เตือนใกล้สิ้นสุด', date: new Date(t_e - (30*86400000)), desc: 'ก่อนหมด 30 วัน' },
-                { id: 'chk_5', title: 'สิ้นสุดสัญญาจ้าง', date: endDate, desc: 'ครบกำหนด' }
+                { id: 'chk_4', title: 'แจ้งเตือนสัญญาใกล้สิ้นสุด', date: new Date(t_e - (30*86400000)), desc: 'ก่อนหมด 30 วัน' },
+                { id: 'chk_5', title: 'วันสิ้นสุดสัญญาจ้าง', date: endDate, desc: 'ครบกำหนด' },
+                { id: 'chk_6', title: 'คณะกรรมการตรวจรับพัสดุ', date: addWorkDays(t_e, 3), desc: 'ภายใน 3 วันทำการหลังสิ้นสุดสัญญา' },
+                { id: 'chk_post', title: 'ระยะหลังการก่อสร้างและปิดโครงการ (Post-Construction & Closeout)', date: addWorkDays(t_e, 15), desc: 'หลังสิ้นสุดสัญญาจ้าง' }
             ];
             if(isW124) cList.push({id: 'chk_w3', title: `พิจารณาบอกเลิก (ว124 ${w124Reason})`, date: checkDate, desc: 'เตือนอัตโนมัติ'});
             cList.sort((a,b) => a.date - b.date);
@@ -1893,6 +1955,112 @@
                     </div>
                 `).join('');
 
+                // สร้างโครงสร้างสำหรับหัวข้อ chk_post (ไม่มี Input ตัวเอง แต่มีหัวข้อย่อยซ้อนอยู่)
+                let innerContent = '';
+                if (t.id === 'chk_post') {
+                    // 1. หัวข้อย่อย: หนังสือรับรองงานแล้วเสร็จสมบูรณ์
+                    const warrData = window.userInputsCache.checklist['chk_warranty'] || {};
+                    const isWarrChecked = warrData.checked || false;
+                    const warrInputCls = isWarrChecked 
+                        ? 'bg-white border-blue-300 focus:bg-white focus:ring focus:ring-blue-300 text-blue-900 shadow-sm font-semibold placeholder-blue-300' 
+                        : 'bg-white border-gray-200 placeholder-gray-400 focus:bg-white';
+                        
+                    const warrSubItems = warrData.subItems || [];
+                    const warrSubItemsHtml = warrSubItems.map((sub, idx) => `
+                        <div class="flex gap-1 items-center mt-1.5 relative group">
+                            <div class="absolute -left-2.5 top-1/2 w-2 border-t border-dashed border-blue-400"></div>
+                            <input type="text" placeholder="รายละเอียดย่อย (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[4] w-0 transition-colors ${warrInputCls}" value="${sub.detail||''}" onchange="window.updateChecklistSubItem('chk_warranty', ${idx}, 'detail', this.value)">
+                            <input type="text" placeholder="เลขเอกสาร (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${warrInputCls}" value="${sub.doc||''}" onchange="window.updateChecklistSubItem('chk_warranty', ${idx}, 'doc', this.value)">
+                            <input type="date" class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${warrInputCls}" value="${sub.date||''}" onchange="window.updateChecklistSubItem('chk_warranty', ${idx}, 'date', this.value)">
+                            <button type="button" onclick="window.removeChecklistSubItem('chk_warranty', ${idx})" class="text-red-400 hover:text-red-600 px-1 flex-[1] w-0 text-center" title="ลบรายการย่อย"><i class="fas fa-trash text-[9px]"></i></button>
+                        </div>
+                    `).join('');
+
+                    let extraSubHtml = `
+                        <div class="flex items-start gap-1.5 relative group bg-indigo-50/70 p-1.5 rounded border border-indigo-100 shadow-sm">
+                            <div class="absolute -left-3 top-3 w-3 border-t border-dashed border-blue-400"></div>
+                            <input type="checkbox" id="chk_warranty" class="mt-0.5 w-3.5 h-3.5 cursor-pointer rounded text-indigo-600 focus:ring-indigo-500" ${isWarrChecked?'checked':''} onchange="window.toggleChecklist('chk_warranty')">
+                            <div class="flex-1 overflow-hidden">
+                                <label for="chk_warranty" class="text-[10px] font-bold ${isWarrChecked?'text-indigo-800':'text-gray-700'} cursor-pointer">หนังสือรับรองงานแล้วเสร็จสมบูรณ์</label>
+                                <div class="text-[8px] text-indigo-600 mt-0.5">กำหนด: ${formatDateShort(warrantyEndDate)} | สิ้นสุดประกันผลงาน 2 ปี นับถัดจากวันตรวจรับมอบงาน</div>
+                                
+                                <div class="flex flex-col gap-1 mt-1.5 ${isWarrChecked?'':'opacity-50 pointer-events-none transition-opacity grayscale'}">
+                                    <div class="flex gap-1 items-center">
+                                        <input type="text" placeholder="รายละเอียดงาน (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[4] w-0 transition-colors ${warrInputCls}" value="${warrData.detail||''}" onchange="window.updateChecklistDetail('chk_warranty','detail',this.value)">
+                                        <input type="text" placeholder="เลขเอกสาร (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${warrInputCls}" value="${warrData.doc||''}" onchange="window.updateChecklistDetail('chk_warranty','doc',this.value)">
+                                        <input type="date" class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${warrInputCls}" value="${warrData.date||''}" onchange="window.updateChecklistDetail('chk_warranty','date',this.value)">
+                                        <button type="button" onclick="window.addChecklistSubItem('chk_warranty')" class="text-[9px] ${isWarrChecked?'bg-blue-500 text-white hover:bg-blue-600 shadow-sm':'bg-gray-100 text-gray-400 hover:bg-gray-200'} flex-[1] w-0 py-1.5 rounded flex justify-center items-center transition-colors" title="เพิ่มรายการย่อย"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                    <div class="${warrSubItems.length > 0 ? 'mt-1 pl-3 border-l border-dashed border-blue-400 ml-1 pb-1' : ''}">
+                                        ${warrSubItemsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // 2. หัวข้อย่อย: แจ้งแก้ไขงาน (Defect)
+                    const defectData = window.userInputsCache.checklist['chk_defect'] || {};
+                    const isDefectChecked = defectData.checked || false;
+                    const defectInputCls = isDefectChecked 
+                        ? 'bg-white border-orange-300 focus:bg-white focus:ring focus:ring-orange-300 text-orange-900 shadow-sm font-semibold placeholder-orange-300' 
+                        : 'bg-white border-gray-200 placeholder-gray-400 focus:bg-white';
+                        
+                    const defectSubItems = defectData.subItems || [];
+                    const defectSubItemsHtml = defectSubItems.map((sub, idx) => `
+                        <div class="flex gap-1 items-center mt-1.5 relative group">
+                            <div class="absolute -left-2.5 top-1/2 w-2 border-t border-dashed border-orange-400"></div>
+                            <input type="text" placeholder="รายละเอียดย่อย (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[4] w-0 transition-colors ${defectInputCls}" value="${sub.detail||''}" onchange="window.updateChecklistSubItem('chk_defect', ${idx}, 'detail', this.value)">
+                            <input type="text" placeholder="เลขเอกสาร (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${defectInputCls}" value="${sub.doc||''}" onchange="window.updateChecklistSubItem('chk_defect', ${idx}, 'doc', this.value)">
+                            <input type="date" class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${defectInputCls}" value="${sub.date||''}" onchange="window.updateChecklistSubItem('chk_defect', ${idx}, 'date', this.value)">
+                            <button type="button" onclick="window.removeChecklistSubItem('chk_defect', ${idx})" class="text-red-400 hover:text-red-600 px-1 flex-[1] w-0 text-center" title="ลบรายการย่อย"><i class="fas fa-trash text-[9px]"></i></button>
+                        </div>
+                    `).join('');
+
+                    let defectHtml = `
+                        <div class="flex items-start gap-1.5 mt-1.5 relative group bg-orange-50/70 p-1.5 rounded border border-orange-100 shadow-sm">
+                            <div class="absolute -left-3 top-3 w-3 border-t border-dashed border-blue-400"></div>
+                            <input type="checkbox" id="chk_defect" class="mt-0.5 w-3.5 h-3.5 cursor-pointer rounded text-orange-600 focus:ring-orange-500" ${isDefectChecked?'checked':''} onchange="window.toggleChecklist('chk_defect')">
+                            <div class="flex-1 overflow-hidden">
+                                <label for="chk_defect" class="text-[10px] font-bold ${isDefectChecked?'text-orange-800':'text-gray-700'} cursor-pointer">แจ้งแก้ไขงานที่อยู่ระหว่างระยะเวลาค้ำประกัน 2 ปี</label>
+                                <div class="text-[8px] text-orange-600 mt-0.5">กำหนด: ภายใน ${formatDateShort(warrantyEndDate)}</div>
+                                
+                                <div class="flex flex-col gap-1 mt-1.5 ${isDefectChecked?'':'opacity-50 pointer-events-none transition-opacity grayscale'}">
+                                    <div class="flex gap-1 items-center">
+                                        <input type="text" placeholder="รายละเอียดงาน (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[4] w-0 transition-colors ${defectInputCls}" value="${defectData.detail||''}" onchange="window.updateChecklistDetail('chk_defect','detail',this.value)">
+                                        <input type="text" placeholder="เลขเอกสาร (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${defectInputCls}" value="${defectData.doc||''}" onchange="window.updateChecklistDetail('chk_defect','doc',this.value)">
+                                        <input type="date" class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${defectInputCls}" value="${defectData.date||''}" onchange="window.updateChecklistDetail('chk_defect','date',this.value)">
+                                        <button type="button" onclick="window.addChecklistSubItem('chk_defect')" class="text-[9px] ${isDefectChecked?'bg-orange-500 text-white hover:bg-orange-600 shadow-sm':'bg-gray-100 text-gray-400 hover:bg-gray-200'} flex-[1] w-0 py-1.5 rounded flex justify-center items-center transition-colors" title="เพิ่มรายการย่อย"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                    <div class="${defectSubItems.length > 0 ? 'mt-1 pl-3 border-l border-dashed border-orange-400 ml-1 pb-1' : ''}">
+                                        ${defectSubItemsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    extraSubHtml += defectHtml;
+
+                    innerContent = `
+                        <div class="mt-1 pl-3 border-l border-dashed border-blue-400 ml-1 pb-1">
+                            ${extraSubHtml}
+                        </div>
+                    `;
+                } else {
+                    innerContent = `
+                        <div class="flex gap-1 items-center">
+                            <input type="text" placeholder="รายละเอียดงาน (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[4] w-0 transition-colors ${mainInputCls}" value="${itemData.detail||''}" onchange="window.updateChecklistDetail('${t.id}','detail',this.value)">
+                            <input type="text" placeholder="เลขเอกสาร (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${mainInputCls}" value="${itemData.doc||''}" onchange="window.updateChecklistDetail('${t.id}','doc',this.value)">
+                            <input type="date" class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${mainInputCls}" value="${itemData.date||''}" onchange="window.updateChecklistDetail('${t.id}','date',this.value)">
+                            <button type="button" onclick="window.addChecklistSubItem('${t.id}')" class="text-[9px] ${isChecked?'bg-blue-500 text-white hover:bg-blue-600 shadow-sm':'bg-gray-100 text-gray-400 hover:bg-gray-200'} flex-[1] w-0 py-1.5 rounded flex justify-center items-center transition-colors" title="เพิ่มรายการย่อย"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="${subItems.length > 0 ? 'mt-1 pl-3 border-l border-dashed border-blue-400 ml-1 pb-1' : ''}">
+                            ${subItemsHtml}
+                        </div>
+                    `;
+                }
+
                 container.innerHTML += `
                     <div class="flex items-start gap-2 p-2 border rounded transition-all ${bCls}">
                         <input type="checkbox" id="${t.id}" class="mt-1 w-4 h-4 cursor-pointer rounded text-blue-600 focus:ring-blue-500" ${isChecked?'checked':''} onchange="window.toggleChecklist('${t.id}')">
@@ -1901,17 +2069,7 @@
                             <div class="text-[9px] ${isChecked?'text-blue-600':'text-gray-500'} mt-0.5">กำหนด: ${formatDateShort(t.date)} | ${t.desc}</div>
                             
                             <div class="flex flex-col gap-1 mt-2 ${isChecked?'':'opacity-50 pointer-events-none transition-opacity grayscale'}">
-                                <!-- Main Item Input -->
-                                <div class="flex gap-1 items-center">
-                                    <input type="text" placeholder="รายละเอียดงาน (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[4] w-0 transition-colors ${mainInputCls}" value="${itemData.detail||''}" onchange="window.updateChecklistDetail('${t.id}','detail',this.value)">
-                                    <input type="text" placeholder="เลขเอกสาร (โปรดระบุ)..." class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${mainInputCls}" value="${itemData.doc||''}" onchange="window.updateChecklistDetail('${t.id}','doc',this.value)">
-                                    <input type="date" class="text-[9px] border p-1.5 rounded flex-[2.5] w-0 transition-colors ${mainInputCls}" value="${itemData.date||''}" onchange="window.updateChecklistDetail('${t.id}','date',this.value)">
-                                    <button type="button" onclick="window.addChecklistSubItem('${t.id}')" class="text-[9px] ${isChecked?'bg-blue-500 text-white hover:bg-blue-600 shadow-sm':'bg-gray-100 text-gray-400 hover:bg-gray-200'} flex-[1] w-0 py-1.5 rounded flex justify-center items-center transition-colors" title="เพิ่มรายการย่อย"><i class="fas fa-plus"></i></button>
-                                </div>
-                                <!-- Sub Items Container -->
-                                <div class="${subItems.length > 0 ? 'mt-1 pl-3 border-l border-dashed border-blue-400 ml-1 pb-1' : ''}">
-                                    ${subItemsHtml}
-                                </div>
+                                ${innerContent}
                             </div>
                         </div>
                     </div>`;
@@ -1956,7 +2114,6 @@
         // --- SUMMARY TAB ---
         window.getProjectSummaryData = function(p) {
             if (!p.startDate) return null;
-            // คำนวณระยะเวลาและแผนจากวันที่ถูกบันทึกไว้ในฐานข้อมูล เพื่อให้ตรงกับหน้ากราฟเป๊ะๆ
             const cd = p.checkDate ? new Date(p.checkDate) : new Date(); 
             const sd = new Date(p.startDate);
             const d = parseInt(p.duration)||150; const ext = parseInt(p.extensionDays)||0;
@@ -1970,11 +2127,9 @@
             const pTasks = p.tasks || [];
             const plan = window.getOverallPlanned(cd, pTasks);
             
-            // ดึงค่าผลงานจริงที่คำนวณไว้อย่างถูกต้องแล้วจากโมดูล WBS เพื่อให้ตัวเลขตรงกัน 100%
             const act = window.getOverallActual(pTasks);
             const variance = (act - plan).toFixed(2);
             
-            // Cloud S-Curve & Checklist W124 Logic Application
             let isW124 = false;
             let w124Reason = "";
             if (tpct >= 100 && act < 85) { isW124 = true; w124Reason = "(ข้อ 2.2.4)"; }
@@ -2013,11 +2168,13 @@
             let dAmt = 0;
             (p.routesData||[]).forEach(r => { (r.disbursements||[]).forEach(dx => dAmt += parseFloat(dx.value)||0) });
             const cAmt = parseFloat((p.contractAmount||'0').replace(/,/g, '')) || 0;
+            const disbursementPct = cAmt > 0 ? (dAmt / cAmt) * 100 : 0;
 
             return {
                 id: p.id, name: p.name, contractName: p.contractName, supervisorNameDisplay: p.supervisorName||'ไม่ระบุ',
                 budgetType: p.budgetType, fiscalYear: p.fiscalYear, endDate: ed.toISOString(),
                 contractAmountRaw: cAmt, contractAmount: formatNum(cAmt),
+                disbursedAmountRaw: dAmt, disbursementPct: disbursementPct,
                 remainingAmount: cAmt - dAmt, remainingAmountText: formatNum(cAmt - dAmt),
                 plan: plan.toFixed(2), actual: act.toFixed(2), varianceNum: parseFloat(variance), variance: variance>0?'+'+variance:variance,
                 status: st, statusColor: stC, icon: ic
@@ -2030,7 +2187,6 @@
 
             const n = new Date(); const cM=n.getMonth(); const cY=n.getFullYear();
             
-            // Initialization for Aggregation
             let endingData = { 
                 last: { count: 0, totalAmt: 0, years: {} }, 
                 current: { count: 0, totalAmt: 0, years: {} }, 
@@ -2049,7 +2205,6 @@
                 const remaining = d.remainingAmount || 0;
                 const supName = d.supervisorNameDisplay;
 
-                // 1. Ending Data Aggregation
                 if (ey === cY && em === cM) {
                     endingData.current.count++;
                     endingData.current.totalAmt += remaining;
@@ -2067,7 +2222,6 @@
                     endingData.next.years[fiscalYearKey][budgetKey] = (endingData.next.years[fiscalYearKey][budgetKey] || 0) + remaining;
                 }
 
-                // 2. Supervisor Data Aggregation
                 if (!supervisorData[supName]) {
                     supervisorData[supName] = { count: 0, totalAmount: 0, totalRemaining: 0, budgets: {} };
                 }
@@ -2082,7 +2236,6 @@
                 supervisorData[supName].budgets[budgetKey].amount += d.contractAmountRaw || 0;
                 supervisorData[supName].budgets[budgetKey].remaining += remaining;
 
-                // 3. Budget Data Aggregation
                 if (!budgetCounts[fiscalYearKey]) {
                     budgetCounts[fiscalYearKey] = { totalAmount: 0, totalRemaining: 0, totalCount: 0, types: {} };
                 }
@@ -2097,7 +2250,6 @@
                 budgetCounts[fiscalYearKey].types[budgetKey].remaining += remaining;
             });
 
-            // Help function for budget lists
             const generateBudgetListHtml = (yearsData, colorClass) => {
                 const yearEntries = Object.entries(yearsData);
                 if (yearEntries.length === 0) return `<div class="text-[11px] text-gray-400 text-center mt-4">- ไม่มีค้างเบิก -</div>`;
@@ -2121,7 +2273,6 @@
                 return html || `<div class="text-[11px] text-gray-400 text-center mt-4">- ไม่มีค้างเบิก -</div>`;
             };
 
-            // Render Summary Cards
             document.getElementById('sumLastMonth').innerText = endingData.last.count;
             document.getElementById('amtLastMonthList').innerHTML = generateBudgetListHtml(endingData.last.years, 'text-red-500');
             document.getElementById('amtLastMonthTotal').innerText = `รวม: ${endingData.last.totalAmt.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿`;
@@ -2134,14 +2285,12 @@
             document.getElementById('amtNextMonthList').innerHTML = generateBudgetListHtml(endingData.next.years, 'text-orange-500');
             document.getElementById('amtNextMonthTotal').innerText = `รวม: ${endingData.next.totalAmt.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ฿`;
 
-            // Active Ending Month Filter Style
             const activeEndingMonth = window.tableState.filters['endingMonth'];
             const boxLast = document.getElementById('boxLastMonth'), boxCurrent = document.getElementById('boxCurrentMonth'), boxNext = document.getElementById('boxNextMonth');
             if (boxLast) boxLast.className = `bg-white p-3 rounded shadow-sm border flex flex-col cursor-pointer transition-colors ${activeEndingMonth === 'last' ? 'ring-2 ring-red-400 bg-red-50 border-transparent' : 'border-gray-200 hover:bg-red-50'}`;
             if (boxCurrent) boxCurrent.className = `bg-white p-3 rounded shadow-sm border relative flex flex-col transform md:-translate-y-2 cursor-pointer transition-colors ${activeEndingMonth === 'current' ? 'ring-2 ring-indigo-500 bg-indigo-50 border-transparent' : 'border-indigo-300 hover:bg-indigo-50'}`;
             if (boxNext) boxNext.className = `bg-white p-3 rounded shadow-sm border flex flex-col cursor-pointer transition-colors ${activeEndingMonth === 'next' ? 'ring-2 ring-orange-400 bg-orange-50 border-transparent' : 'border-gray-200 hover:bg-orange-50'}`;
 
-            // Render Supervisor Summary
             const supContainer = document.getElementById('supervisorSummaryList');
             supContainer.innerHTML = '';
             const sortedSups = Object.entries(supervisorData).sort((a, b) => b[1].totalAmount - a[1].totalAmount);
@@ -2183,7 +2332,6 @@
                 });
             }
 
-            // Render Budget Summary
             const budgetContainer = document.getElementById('budgetSummaryList');
             budgetContainer.innerHTML = '';
             const sortedYears = Object.entries(budgetCounts).sort((a, b) => {
@@ -2229,7 +2377,6 @@
                 });
             }
 
-            // Filtering for Table
             ['name','supervisorName','status', 'budgetFull', 'endingMonth'].forEach(k => {
                 let fv = window.tableState.filters[k];
                 if(fv) data = data.filter(i => {
@@ -2277,7 +2424,13 @@
                             <span class="font-bold text-emerald-700">${d.fiscalYear || '-'}</span>
                             <div class="text-[9px] text-gray-500 font-normal mt-0.5">${d.budgetType || 'ไม่ระบุ'}</div>
                         </td>
-                        <td class="p-2 text-right text-xs">${d.contractAmount}</td>
+                        <td class="p-2 text-right text-xs">
+                            <div class="font-semibold text-gray-800">${d.contractAmount}</div>
+                            <div class="w-full bg-gray-200 rounded-full h-1 mt-1 overflow-hidden" title="เบิกจ่ายแล้ว ${formatNum(d.disbursedAmountRaw)} ฿">
+                                <div class="bg-teal-500 h-1 rounded-full transition-all duration-500" style="width: ${Math.min(100, d.disbursementPct)}%"></div>
+                            </div>
+                            <div class="text-[8.5px] text-teal-600 font-semibold mt-0.5 leading-none">เบิก ${d.disbursementPct.toFixed(2)}%</div>
+                        </td>
                         <td class="p-2 text-right text-xs font-semibold text-emerald-700">${d.remainingAmountText}</td>
                         <td class="p-2 text-center text-xs">${formatDateShort(new Date(d.endDate))}</td>
                         <td class="p-2 text-center text-xs">${d.plan}</td>
@@ -2328,7 +2481,6 @@
             }
             
             sortedSups.forEach(([name, sData]) => {
-                // Generate Mini Projects List
                 sData.projects.sort((a, b) => b.contractAmountRaw - a.contractAmountRaw);
                 let projectsHtml = sData.projects.map(p => `
                     <div class="text-[10px] flex justify-between items-start border-b border-gray-200 py-1.5 last:border-0 hover:bg-indigo-50 cursor-pointer transition-colors px-1" onclick="window.switchProject('${p.id}'); window.switchTab('detail');">
@@ -2343,7 +2495,6 @@
                     </div>
                 `).join('');
 
-                // Generate Budget Breakdown List
                 let budgetHtml = Object.entries(sData.budgets).map(([bName, bData]) => `
                     <div class="flex justify-between items-center text-[10px] mt-1 pt-1 border-t border-blue-100 first:border-0 first:pt-0 first:mt-0">
                         <span class="text-blue-800"><i class="fa-solid fa-caret-right text-blue-400 mr-1"></i> ${bName} (${bData.count})</span>
@@ -2410,6 +2561,169 @@
             if(window.tableState.sortCol === col) window.tableState.sortDir = window.tableState.sortDir === 'asc'?'desc':'asc';
             else { window.tableState.sortCol = col; window.tableState.sortDir = 'asc'; }
             window.renderSummaryTable();
+        };
+
+        window.getWarrantyEndDate = function(p) {
+            if (!p.startDate) return null;
+            const sd = new Date(p.startDate);
+            const d = parseInt(p.duration)||150; const ext = parseInt(p.extensionDays)||0;
+            const tDays = d + ext; 
+            let ed = new Date(sd); ed.setDate(ed.getDate() + tDays - 1);
+
+            let baseAcceptanceDate = new Date(ed);
+            let added = 0;
+            while (added < 3) {
+                baseAcceptanceDate.setDate(baseAcceptanceDate.getDate() + 1);
+                if (baseAcceptanceDate.getDay() !== 0 && baseAcceptanceDate.getDay() !== 6) added++;
+            }
+
+            if (p.checklist && p.checklist['chk_6'] && p.checklist['chk_6'].checked && p.checklist['chk_6'].date) {
+                const parsedDate = new Date(p.checklist['chk_6'].date);
+                if (!isNaN(parsedDate.getTime())) baseAcceptanceDate = parsedDate;
+            }
+
+            let warrantyEndDate = new Date(baseAcceptanceDate);
+            warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 2);
+            return warrantyEndDate;
+        };
+
+        window.renderWarrantyTab = function() {
+            const urgentContainer = document.getElementById('warrantyUrgentCards');
+            const yearContainer = document.getElementById('warrantyYearCards');
+            if (!urgentContainer || !yearContainer) return;
+
+            const now = new Date();
+            const cM = now.getMonth();
+            const cY = now.getFullYear();
+
+            let nextM = cM + 1; let nextY = cY;
+            if (nextM > 11) { nextM = 0; nextY++; }
+
+            let dataThisMonth = [];
+            let dataNextMonth = [];
+            let dataByYear = {};
+
+            projects.forEach(p => {
+                const wDate = window.getWarrantyEndDate(p);
+                if (!wDate) return;
+
+                const wM = wDate.getMonth();
+                const wY = wDate.getFullYear();
+                const thaiYear = wY + 543;
+
+                const item = {
+                    id: p.id,
+                    name: p.name,
+                    contractName: p.contractName,
+                    supervisorName: p.supervisorName || 'ไม่ระบุ',
+                    date: wDate,
+                    dateStr: formatDateShort(wDate),
+                    isExpired: wDate < now
+                };
+
+                if (wY === cY && wM === cM) dataThisMonth.push(item);
+                if (wY === nextY && wM === nextM) dataNextMonth.push(item);
+
+                if (!dataByYear[thaiYear]) dataByYear[thaiYear] = [];
+                dataByYear[thaiYear].push(item);
+            });
+
+            // Sort arrays
+            const sortFn = (a, b) => a.date - b.date;
+            dataThisMonth.sort(sortFn);
+            dataNextMonth.sort(sortFn);
+
+            // Render Urgent Cards
+            const renderList = (list, emptyMsg, baseColor) => {
+                let hoverClass = baseColor === 'red' ? 'hover:bg-red-50' : 'hover:bg-orange-50';
+                let borderClass = baseColor === 'red' ? 'border-red-100' : 'border-orange-100';
+                let textClass = baseColor === 'red' ? 'text-red-800' : 'text-orange-800';
+
+                if (list.length === 0) return `<div class="text-xs text-gray-400 text-center py-4 border border-dashed rounded bg-white/50">${emptyMsg}</div>`;
+                return `<div class="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">` + 
+                    list.map(i => `
+                        <div class="text-[10px] flex justify-between items-center bg-white p-2 border ${borderClass} rounded shadow-sm ${hoverClass} cursor-pointer transition-colors" onclick="window.switchProject('${i.id}'); window.switchTab('detail');">
+                            <div class="flex-1 pr-2 overflow-hidden">
+                                <div class="font-bold ${textClass} truncate" title="${i.contractName}">${i.contractName || 'ไม่มีเลขสัญญา'}</div>
+                                <div class="text-[9px] text-gray-500 truncate mt-0.5" title="${i.name}"><i class="fa-solid fa-user-tie text-gray-400 mr-1"></i>${i.supervisorName} | ${i.name || 'ไม่มีชื่อ'}</div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <div class="font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded text-[9px]"><i class="fa-solid fa-clock"></i> ${i.dateStr}</div>
+                            </div>
+                        </div>
+                    `).join('') + `</div>`;
+            };
+
+            urgentContainer.innerHTML = `
+                <div class="bg-red-50 p-4 rounded-lg border border-red-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-red-100 pb-2">
+                        <h3 class="font-bold text-red-700 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> หมดค้ำประกันเดือนนี้</h3>
+                        <span class="bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${dataThisMonth.length} โครงการ</span>
+                    </div>
+                    <div class="flex-1">
+                        ${renderList(dataThisMonth, 'ไม่มีโครงการที่หมดค้ำประกันเดือนนี้', 'red')}
+                    </div>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg border border-orange-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-orange-100 pb-2">
+                        <h3 class="font-bold text-orange-700 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> หมดค้ำประกันเดือนหน้า</h3>
+                        <span class="bg-orange-500 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${dataNextMonth.length} โครงการ</span>
+                    </div>
+                    <div class="flex-1">
+                        ${renderList(dataNextMonth, 'ไม่มีโครงการที่หมดค้ำประกันเดือนหน้า', 'orange')}
+                    </div>
+                </div>
+            `;
+
+            // Render By Year Cards
+            yearContainer.innerHTML = '';
+            const sortedYears = Object.keys(dataByYear).sort((a,b) => parseInt(a) - parseInt(b));
+            
+            if (sortedYears.length === 0) {
+                yearContainer.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 border border-dashed rounded bg-gray-50">ยังไม่มีข้อมูลโครงการ</div>`;
+                return;
+            }
+
+            sortedYears.forEach(year => {
+                const list = dataByYear[year];
+                list.sort(sortFn);
+                
+                let colorConfig;
+                if (parseInt(year) < cY + 543) { // Past
+                    colorConfig = { wrapper: 'border-gray-200', bgHead: 'bg-gray-50', borderHead: 'border-gray-100', textHead: 'text-gray-700', icon: 'text-gray-500', badgeBg: 'bg-gray-600', hoverRow: 'hover:bg-gray-50', textRowHover: 'group-hover:text-gray-800' };
+                } else if (parseInt(year) === cY + 543) { // Current Year
+                    colorConfig = { wrapper: 'border-red-200', bgHead: 'bg-red-50', borderHead: 'border-red-100', textHead: 'text-red-900', icon: 'text-red-500', badgeBg: 'bg-red-600', hoverRow: 'hover:bg-red-50', textRowHover: 'group-hover:text-red-800' };
+                } else { // Future
+                    colorConfig = { wrapper: 'border-amber-200', bgHead: 'bg-amber-50', borderHead: 'border-amber-100', textHead: 'text-amber-900', icon: 'text-amber-500', badgeBg: 'bg-amber-600', hoverRow: 'hover:bg-amber-50', textRowHover: 'group-hover:text-amber-800' };
+                }
+
+                let listHtml = list.map(i => {
+                    let badgeCls = i.isExpired ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700';
+                    let iconCls = i.isExpired ? 'fa-check' : 'fa-hourglass-half';
+                    return `
+                    <div class="text-[10px] flex justify-between items-center bg-white p-2 border-b border-gray-100 last:border-0 ${colorConfig.hoverRow} cursor-pointer transition-colors group" onclick="window.switchProject('${i.id}'); window.switchTab('detail');">
+                        <div class="flex-1 pr-2 overflow-hidden">
+                            <div class="font-semibold text-gray-800 ${colorConfig.textRowHover} truncate" title="${i.contractName}">${i.contractName || 'ไม่มีเลขสัญญา'}</div>
+                            <div class="text-[9px] text-gray-500 truncate mt-0.5"><i class="fa-solid fa-user-tie text-gray-400 mr-1"></i>${i.supervisorName}</div>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <div class="font-bold ${badgeCls} px-1.5 py-0.5 rounded text-[9px]"><i class="fa-solid ${iconCls}"></i> ${i.dateStr}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                yearContainer.innerHTML += `
+                    <div class="bg-white border ${colorConfig.wrapper} rounded-lg shadow-sm hover:shadow-md transition flex flex-col overflow-hidden">
+                        <div class="p-3 ${colorConfig.bgHead} border-b ${colorConfig.borderHead} flex justify-between items-center">
+                            <span class="${colorConfig.textHead} font-bold text-sm flex items-center gap-2"><i class="fa-regular fa-calendar ${colorConfig.icon}"></i> ปี ${year}</span>
+                            <span class="${colorConfig.badgeBg} text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${list.length} โครงการ</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/30">
+                            ${listHtml}
+                        </div>
+                    </div>
+                `;
+            });
         };
 
         window.exportSummaryCSV = function() {
