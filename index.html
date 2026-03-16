@@ -62,7 +62,7 @@
                     <p class="text-sm text-blue-200" id="connectionStatus">สถานะ: กำลังเชื่อมต่อ...</p>
                 </div>
             </div>
-            <button onclick="window.fetchProjectsFromCloud(true)" class="bg-white text-blue-800 px-3 py-1.5 rounded shadow hover:bg-blue-50 transition text-sm font-bold flex items-center gap-2">
+            <button id="refreshBtn" onclick="window.refreshPage()" class="bg-white text-blue-800 px-3 py-1.5 rounded shadow hover:bg-blue-50 transition text-sm font-bold flex items-center gap-2">
                 <i class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล
             </button>
         </div>
@@ -80,6 +80,9 @@
             </button>
             <button onclick="window.switchTab('warranty')" id="tabWarrantyBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
                 <i class="fa-solid fa-shield-halved"></i> ค้ำประกันผลงาน
+            </button>
+            <button onclick="window.switchTab('permit')" id="tabPermitBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
+                <i class="fa-solid fa-stamp"></i> หนังสืออนุญาต
             </button>
             <button onclick="window.switchTab('detail')" id="tabDetailBtn" class="whitespace-nowrap py-2 px-6 border-b-4 border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-bold focus:outline-none flex items-center gap-2 rounded-t-lg transition">
                 <i class="fa-solid fa-list-check"></i> รายละเอียดโครงการ
@@ -603,6 +606,32 @@
             </div>
         </div>
 
+        <!-- ======================= TAB 5: หนังสืออนุญาต (Permit Dashboard) ======================= -->
+        <div id="viewPermit" class="lg:col-span-12 w-full hidden">
+            <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-teal-500">
+                <div class="flex justify-between items-center mb-6 border-b pb-3">
+                    <h2 class="text-xl font-bold flex items-center gap-2 text-teal-800"><i class="fa-solid fa-stamp"></i> ทะเบียนควบคุมหนังสืออนุญาตเข้าพื้นที่</h2>
+                </div>
+                
+                <!-- Urgent Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6" id="permitUrgentCards">
+                    <!-- Injected by JS -->
+                </div>
+
+                <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-person-walking-arrow-right text-blue-500"></i> สถานะการเข้าพื้นที่ (กำหนด 180 วันหลังได้อนุญาต)</h3>
+                <!-- Entry Status Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6" id="permitEntryCards">
+                    <!-- Injected by JS -->
+                </div>
+
+                <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-layer-group text-teal-500"></i> แยกตามหน่วยงานเจ้าของพื้นที่</h3>
+                <!-- Grid by Area -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" id="permitGroupedCards">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Modal ยืนยันการลบ -->
@@ -676,20 +705,20 @@
 
         window.tableState = { sortCol: null, sortDir: 'asc', filters: {} };
 
-        // --- MATH EVALUATION & FORMATTERS ---
-        window.evaluateMath = function(expr) {
-            try {
-                let cleanExpr = expr.replace(/,/g, '').replace(/\s/g, '');
-                if (cleanExpr === '') return 0;
-                if (/^[0-9+\-*/().]+$/.test(cleanExpr)) {
-                    let result = new Function('return ' + cleanExpr)();
-                    return (isNaN(result) || !isFinite(result)) ? 0 : result;
-                }
-            } catch (e) {
-                console.warn("Invalid equation:", expr);
+        window.refreshPage = function() {
+            const btn = document.getElementById('refreshBtn');
+            if(btn) {
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังรีเฟรช...';
+                btn.disabled = true;
             }
-            let fallback = parseFloat(expr.replace(/,/g, ''));
-            return isNaN(fallback) ? 0 : fallback;
+            // หน่วงเวลาเล็กน้อยเพื่อให้ UI อัปเดตไอคอนโหลด ก่อนที่เบราว์เซอร์จะทำการรีเฟรชหน้า
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        };
+
+        // --- GLOBAL HELPERS ---
+        window.addWorkDays = function(dateMs, days) {
         };
 
         window.formatEquationInput = function(input) {
@@ -778,9 +807,10 @@
         // --- CLOUD FETCH / SAVE ---
         window.fetchProjectsFromCloud = async function(isInitialLoad = false) {
             try {
-                if(!isInitialLoad) {
-                     const btn = document.querySelector('button[onclick="window.fetchProjectsFromCloud(true)"]');
-                     if(btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังรีเฟรช...'; btn.disabled = true; }
+                const btn = document.getElementById('refreshBtn');
+                if(!isInitialLoad && btn) {
+                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังรีเฟรช...'; 
+                     btn.disabled = true; 
                 }
 
                 const snapshot = await getDocs(collection(db, projectsCollectionPath)); 
@@ -800,6 +830,7 @@
                     window.renderSummaryTable();
                     window.renderWorkloadTab();
                     if(window.renderWarrantyTab) window.renderWarrantyTab();
+                    if(window.renderPermitTab) window.renderPermitTab();
                     if (isInitialLoad && (!activeProjectId || !projects.find(p => p.id === activeProjectId))) {
                         // Clear the UI on initial load to prompt selection
                         window.clearProjectDataUI();
@@ -809,12 +840,12 @@
                     }
                 }
 
-                if(!isInitialLoad) {
-                    const btn = document.querySelector('button[onclick="window.fetchProjectsFromCloud(true)"]');
-                    if(btn) {
-                        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> รีเฟรชสำเร็จ';
-                        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล'; btn.disabled = false; }, 2000);
-                    }
+                if(!isInitialLoad && btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> รีเฟรชสำเร็จ';
+                    setTimeout(() => { 
+                        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล'; 
+                        btn.disabled = false; 
+                    }, 2000);
                 }
             } catch(error) { console.error("Fetch Error:", error); }
         };
@@ -862,6 +893,7 @@
                 window.renderSummaryTable();
                 window.renderWorkloadTab();
                 if(window.renderWarrantyTab) window.renderWarrantyTab();
+                if(window.renderPermitTab) window.renderPermitTab();
                 
                 btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> บันทึกสำเร็จ!';
                 btn.classList.replace('bg-blue-700', 'bg-emerald-600');
@@ -925,6 +957,7 @@
                 window.renderSummaryTable();
                 window.renderWorkloadTab();
                 if(window.renderWarrantyTab) window.renderWarrantyTab();
+                if(window.renderPermitTab) window.renderPermitTab();
             } catch (error) { console.error("Create Error: ", error); }
         };
 
@@ -947,6 +980,7 @@
                 window.renderSummaryTable();
                 window.renderWorkloadTab();
                 if(window.renderWarrantyTab) window.renderWarrantyTab();
+                if(window.renderPermitTab) window.renderPermitTab();
             } catch (error) { console.error("Delete Error: ", error); }
         };
 
@@ -961,17 +995,19 @@
             const vSummary = document.getElementById('viewSummary');
             const vWorkload = document.getElementById('viewWorkload');
             const vWarranty = document.getElementById('viewWarranty');
+            const vPermit = document.getElementById('viewPermit');
             
             const tDetail = document.getElementById('tabDetailBtn');
             const tSummary = document.getElementById('tabSummaryBtn');
             const tWorkload = document.getElementById('tabWorkloadBtn');
             const tWarranty = document.getElementById('tabWarrantyBtn');
+            const tPermit = document.getElementById('tabPermitBtn');
 
             // Reset all
-            [vDetail, vSummary, vWorkload, vWarranty].forEach(v => { if(v) v.classList.add('hidden') });
-            [tDetail, tSummary, tWorkload, tWarranty].forEach(t => {
+            [vDetail, vSummary, vWorkload, vWarranty, vPermit].forEach(v => { if(v) v.classList.add('hidden') });
+            [tDetail, tSummary, tWorkload, tWarranty, tPermit].forEach(t => {
                 if(t) {
-                    t.classList.remove('bg-white', 'border-indigo-600', 'text-indigo-700', 'border-blue-600', 'text-blue-700', 'border-blue-500', 'border-amber-500', 'text-amber-700');
+                    t.classList.remove('bg-white', 'border-indigo-600', 'text-indigo-700', 'border-blue-600', 'text-blue-700', 'border-blue-500', 'border-amber-500', 'text-amber-700', 'border-teal-500', 'text-teal-700');
                     t.classList.add('border-transparent', 'text-gray-500', 'hover:bg-gray-50');
                 }
             });
@@ -997,6 +1033,13 @@
                 tWarranty.classList.remove('hover:bg-gray-50');
                 tWarranty.classList.add('bg-white');
                 if(window.renderWarrantyTab) window.renderWarrantyTab();
+            } else if (tabName === 'permit') {
+                vPermit.classList.remove('hidden');
+                tPermit.classList.replace('border-transparent', 'border-teal-500');
+                tPermit.classList.replace('text-gray-500', 'text-teal-700'); 
+                tPermit.classList.remove('hover:bg-gray-50');
+                tPermit.classList.add('bg-white');
+                if(window.renderPermitTab) window.renderPermitTab();
             } else {
                 vDetail.classList.remove('hidden');
                 tDetail.classList.replace('border-transparent', 'border-blue-600');
@@ -1287,7 +1330,9 @@
             routesData.push({
                 id: 'r_' + Date.now(), name: `เส้นทางที่ ${routesData.length + 1}`, duration: 30, startMonth: 1,
                 pipeLength: 0, pipeValue: 0, repairArea: 0, repairValue: 0, disbursements: [],
-                actualPipeHistory: [], actualRepairHistory: []
+                actualPipeHistory: [], actualRepairHistory: [],
+                permitArea: '', permitDocNo: '', permitIssueDate: '', permitExpiryDate: '',
+                areaEntered: false, actualEntryDate: ''
             });
             window.renderRoutes(); window.calculateRouteTotals(); window.handleFormChange();
         };
@@ -1297,14 +1342,49 @@
         window.updateRoute = function(id, field, el) {
             const r = routesData.find(r => r.id === id);
             if(r) {
-                if(field === 'name') r[field] = el.value;
-                else if(field === 'duration' || field === 'startMonth') r[field] = parseInt(el.value) || 0;
-                else { window.formatNumberInput(el); r[field] = parseFloat(el.value.replace(/,/g, '')) || 0; }
+                let needRender = false;
+                
+                if(el.type === 'checkbox') {
+                    r[field] = el.checked;
+                    needRender = true;
+                    // หากติ๊กเข้าพื้นที่แล้ว แต่ยังไม่มีวันที่ ให้ใช้วันที่ประเมินปัจจุบันแทน
+                    if (field === 'areaEntered' && el.checked && !r.actualEntryDate) {
+                        r.actualEntryDate = document.getElementById('todayDate').value || new Date().toISOString().split('T')[0];
+                    }
+                } else if(['name', 'permitArea', 'permitDocNo', 'permitIssueDate', 'permitExpiryDate', 'actualEntryDate'].includes(field)) {
+                    r[field] = el.value;
+                    
+                    // คำนวณวันหมดอายุอัตโนมัติ (1 ปี) สำหรับ สนย. หรือ เขต
+                    if (['permitArea', 'permitIssueDate'].includes(field)) {
+                        if (r.permitIssueDate && (r.permitArea === 'สนย.' || r.permitArea === 'เขต')) {
+                            let d = new Date(r.permitIssueDate);
+                            if (!isNaN(d.getTime())) {
+                                d.setFullYear(d.getFullYear() + 1);
+                                d.setDate(d.getDate() - 1); // อายุ 1 ปีนับถัดจากวันที่ได้รับอนุญาต (ชนวันก่อนหน้าของปีถัดไป)
+                                r.permitExpiryDate = d.toISOString().split('T')[0];
+                                needRender = true; // สั่งให้วาด UI ใหม่เพื่ออัปเดตช่องวันหมดอายุ
+                            }
+                        }
+                    }
+                    
+                    // หากมีการเปลี่ยนวันที่ได้รับอนุญาต ให้วาด UI ใหม่เพื่ออัปเดตข้อความ "ต้องเข้าพื้นที่ภายใน 180 วัน"
+                    if (field === 'permitIssueDate') {
+                        needRender = true;
+                    }
+                } else if(['duration', 'startMonth'].includes(field)) {
+                    r[field] = parseInt(el.value) || 0;
+                } else {
+                    window.formatNumberInput(el);
+                    r[field] = parseFloat(el.value.replace(/,/g, '')) || 0;
+                }
                 window.calculateRouteTotals(); window.handleFormChange();
+                if (needRender) window.renderRoutes();
             }
         };
         window.formatRouteOnBlur = function(id, field, el) {
-            if(field !== 'name' && field !== 'duration' && field !== 'startMonth') window.formatNumberOnBlur(el);
+            if(!['name', 'duration', 'startMonth', 'permitArea', 'permitDocNo', 'permitIssueDate', 'permitExpiryDate', 'actualEntryDate', 'areaEntered'].includes(field)) {
+                window.formatNumberOnBlur(el);
+            }
             window.renderRoutes(); 
         };
         
@@ -1459,6 +1539,77 @@
                     </div>
                 `;
 
+                // การตรวจสอบวันหมดอายุหนังสืออนุญาต
+                let expiryClass = '';
+                if (r.permitExpiryDate) {
+                    let expDate = new Date(r.permitExpiryDate);
+                    let today = new Date();
+                    today.setHours(0,0,0,0);
+                    if (expDate < today) expiryClass = 'text-red-600 font-bold bg-red-50 border-red-300';
+                }
+
+                // คำนวณวันเข้าพื้นที่ภายใน 180 วัน พร้อมระบบ Checkbox
+                let enterByHtml = '';
+                if (r.permitIssueDate) {
+                    let issueDateObj = new Date(r.permitIssueDate);
+                    if (!isNaN(issueDateObj.getTime())) {
+                        issueDateObj.setDate(issueDateObj.getDate() + 180);
+                        
+                        let isEntered = r.areaEntered || false;
+                        let enteredDateInput = isEntered ? `
+                            <div class="mt-1 flex items-center gap-1 bg-emerald-50/50 p-1 rounded border border-emerald-100">
+                                <span class="text-[8px] text-emerald-700 font-bold whitespace-nowrap">วันที่เข้าจริง:</span>
+                                <input type="date" class="w-full text-[8px] border border-emerald-200 p-0.5 rounded text-emerald-800 focus:ring focus:ring-emerald-200 bg-white" value="${r.actualEntryDate || ''}" onchange="window.updateRoute('${r.id}', 'actualEntryDate', this)">
+                            </div>
+                        ` : '';
+
+                        enterByHtml = `
+                            <div class="text-[8px] mt-1.5 flex flex-col gap-0.5 border-t border-gray-100 pt-1">
+                                <div class="flex items-start gap-1 cursor-pointer">
+                                    <input type="checkbox" id="chk_area_${r.id}" class="mt-0.5 w-3 h-3 text-emerald-600 rounded cursor-pointer focus:ring-emerald-500" ${isEntered ? 'checked' : ''} onchange="window.updateRoute('${r.id}', 'areaEntered', this)">
+                                    <label for="chk_area_${r.id}" class="font-bold cursor-pointer leading-tight ${isEntered ? 'text-emerald-700' : 'text-blue-600'}"><i class="fas fa-info-circle"></i> ต้องเข้าพื้นที่ภายใน: ${formatDateShort(issueDateObj)} (180 วัน)</label>
+                                </div>
+                                ${enteredDateInput}
+                            </div>
+                        `;
+                    }
+                }
+
+                let permitHtml = `
+                    <div class="mt-1.5 mb-1.5 bg-white p-1.5 rounded border border-gray-200">
+                        <div class="text-[9px] font-bold text-gray-700 border-b pb-0.5 mb-1.5 flex justify-between items-center">
+                            <span><i class="fas fa-file-signature text-blue-500"></i> หนังสืออนุญาตเข้าพื้นที่</span>
+                            ${expiryClass ? '<span class="text-[8px] text-red-600 animate-pulse"><i class="fas fa-exclamation-circle"></i> หมดอายุ</span>' : ''}
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-start">
+                            <div>
+                                <div class="text-[8px] text-gray-500 mb-0.5">หน่วยงานเจ้าของพื้นที่</div>
+                                <select class="w-full text-[9px] border border-gray-300 p-1.5 rounded focus:ring focus:ring-purple-200 text-gray-700" onchange="window.updateRoute('${r.id}', 'permitArea', this)">
+                                    <option value="" ${!r.permitArea ? 'selected' : ''}>- เลือกพื้นที่ -</option>
+                                    <option value="เอกชน" ${r.permitArea === 'เอกชน' ? 'selected' : ''}>เอกชน</option>
+                                    <option value="สนย." ${r.permitArea === 'สนย.' ? 'selected' : ''}>สนย.</option>
+                                    <option value="เขต" ${r.permitArea === 'เขต' ? 'selected' : ''}>เขต</option>
+                                    <option value="กรมทางหลวง" ${r.permitArea === 'กรมทางหลวง' ? 'selected' : ''}>กรมทางหลวง</option>
+                                    <option value="การทางพิเศษฯ" ${r.permitArea === 'การทางพิเศษฯ' ? 'selected' : ''}>การทางพิเศษฯ</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div class="text-[8px] text-gray-500 mb-0.5">เลขหนังสืออนุญาต</div>
+                                <input type="text" placeholder="ระบุเลขที่..." class="w-full text-[9px] border border-gray-300 p-1.5 rounded focus:ring focus:ring-purple-200 text-gray-700" value="${r.permitDocNo || ''}" onchange="window.updateRoute('${r.id}', 'permitDocNo', this)">
+                            </div>
+                            <div>
+                                <div class="text-[8px] text-gray-500 mb-0.5">วันที่ได้รับอนุญาต</div>
+                                <input type="date" class="w-full text-[9px] border border-gray-300 p-1.5 rounded focus:ring focus:ring-purple-200 text-gray-700" value="${r.permitIssueDate || ''}" onchange="window.updateRoute('${r.id}', 'permitIssueDate', this)">
+                                ${enterByHtml}
+                            </div>
+                            <div>
+                                <div class="text-[8px] text-gray-500 mb-0.5">วันหมดอายุ <span class="text-[7px] text-gray-400">(ออโต้ 1 ปี สำหรับสนย./เขต)</span></div>
+                                <input type="date" class="w-full text-[9px] border border-gray-300 p-1.5 rounded focus:ring focus:ring-purple-200 text-gray-700 ${expiryClass}" value="${r.permitExpiryDate || ''}" onchange="window.updateRoute('${r.id}', 'permitExpiryDate', this)">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
                 container.innerHTML += `
                     <div class="bg-purple-50 border border-purple-200 rounded p-2 relative shadow-sm">
                         <div class="flex justify-between items-center border-b border-purple-200 pb-1 mb-1">
@@ -1469,6 +1620,9 @@
                                 <button type="button" onclick="window.removeRoute('${r.id}')" class="text-red-400"><i class="fas fa-trash text-[10px]"></i></button>
                             </div>
                         </div>
+                        
+                        ${permitHtml}
+
                         <div class="grid grid-cols-2 gap-2">
                             <!-- งานท่อ -->
                             <div class="bg-white p-1.5 rounded border">
@@ -2717,6 +2871,225 @@
                         <div class="p-3 ${colorConfig.bgHead} border-b ${colorConfig.borderHead} flex justify-between items-center">
                             <span class="${colorConfig.textHead} font-bold text-sm flex items-center gap-2"><i class="fa-regular fa-calendar ${colorConfig.icon}"></i> ปี ${year}</span>
                             <span class="${colorConfig.badgeBg} text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${list.length} โครงการ</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/30">
+                            ${listHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.renderPermitTab = function() {
+            const urgentContainer = document.getElementById('permitUrgentCards');
+            const entryContainer = document.getElementById('permitEntryCards');
+            const groupContainer = document.getElementById('permitGroupedCards');
+            if (!urgentContainer || !groupContainer || !entryContainer) return;
+
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const next30 = new Date(now);
+            next30.setDate(next30.getDate() + 30);
+
+            let expired = [];
+            let soon = [];
+            let byArea = {};
+
+            let pendingEntry = [];
+            let overdueEntry = [];
+
+            projects.forEach(p => {
+                if(!p.routesData) return;
+                p.routesData.forEach(r => {
+                    // ข้ามเส้นทางที่ไม่มีข้อมูลพื้นที่ วันหมดอายุ และเลขที่หนังสือ
+                    if(!r.permitArea && !r.permitExpiryDate && !r.permitDocNo && !r.permitIssueDate) return;
+
+                    const item = {
+                        id: p.id,
+                        cName: p.contractName || 'ไม่ระบุสัญญา',
+                        pName: p.name || 'ไม่ระบุชื่อโครงการ',
+                        supName: p.supervisorName || 'ไม่ระบุ',
+                        rName: r.name || 'เส้นทาง',
+                        area: r.permitArea || 'ไม่ระบุหน่วยงาน',
+                        docNo: r.permitDocNo || '-',
+                        expDate: r.permitExpiryDate ? new Date(r.permitExpiryDate) : null,
+                        expStr: r.permitExpiryDate ? formatDateShort(new Date(r.permitExpiryDate)) : 'ไม่ระบุวันหมดอายุ',
+                        isExpired: false,
+                        hasPermitDate: !!r.permitIssueDate,
+                        isEntered: r.areaEntered || false,
+                        entryLimitStr: '',
+                        entryOverdue: false
+                    };
+
+                    // คำนวณวันหมดอายุหนังสือ
+                    if (item.expDate) {
+                        item.expDate.setHours(0,0,0,0);
+                        if (item.expDate < now) {
+                            item.isExpired = true;
+                            expired.push(item);
+                        }
+                        else if (item.expDate <= next30) soon.push(item);
+                    }
+
+                    // คำนวณสถานะเข้าพื้นที่ (180 วัน)
+                    if (item.hasPermitDate) {
+                        let issueDateObj = new Date(r.permitIssueDate);
+                        if (!isNaN(issueDateObj.getTime())) {
+                            issueDateObj.setDate(issueDateObj.getDate() + 180);
+                            issueDateObj.setHours(0,0,0,0);
+                            item.entryLimitStr = formatDateShort(issueDateObj);
+                            item.entryOverdue = issueDateObj < now;
+
+                            if (!item.isEntered) {
+                                const entryItem = {
+                                    id: item.id, cName: item.cName, rName: item.rName, area: item.area,
+                                    limitDate: issueDateObj, limitStr: item.entryLimitStr
+                                };
+                                if (item.entryOverdue) overdueEntry.push(entryItem);
+                                else pendingEntry.push(entryItem);
+                            }
+                        }
+                    }
+
+                    if(!byArea[item.area]) byArea[item.area] = [];
+                    byArea[item.area].push(item);
+                });
+            });
+
+            // Sorting Functions
+            const sortExpFn = (a,b) => {
+                if(!a.expDate) return 1; if(!b.expDate) return -1;
+                return a.expDate - b.expDate;
+            };
+            expired.sort(sortExpFn);
+            soon.sort(sortExpFn);
+
+            const sortEntryFn = (a,b) => a.limitDate - b.limitDate;
+            pendingEntry.sort(sortEntryFn);
+            overdueEntry.sort(sortEntryFn);
+
+            // Render Urgent Lists (Expiry)
+            const renderUrgentList = (list, emptyMsg, type) => {
+                let borderCls = type === 'expired' ? 'border-red-100' : 'border-orange-100';
+                let textCls = type === 'expired' ? 'text-red-800' : 'text-orange-800';
+                let hoverCls = type === 'expired' ? 'hover:bg-red-50' : 'hover:bg-orange-50';
+
+                if(list.length === 0) return `<div class="text-xs text-gray-400 text-center py-4 border border-dashed rounded bg-white/50">${emptyMsg}</div>`;
+                return `<div class="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">` + 
+                    list.map(i => `
+                        <div class="text-[10px] flex justify-between items-center bg-white p-2 border ${borderCls} rounded shadow-sm ${hoverCls} cursor-pointer transition-colors" onclick="window.switchProject('${i.id}'); window.switchTab('detail');">
+                            <div class="flex-1 pr-2 overflow-hidden">
+                                <div class="font-bold ${textCls} truncate" title="${i.cName}">${i.cName} <span class="text-gray-500 font-normal">| ${i.rName}</span></div>
+                                <div class="text-[9px] text-gray-600 truncate mt-0.5"><i class="fa-solid fa-map-location-dot text-gray-400"></i> ${i.area} <span class="text-gray-400 ml-1">เลขที่: ${i.docNo}</span></div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <div class="font-bold ${type==='expired'?'text-red-600 bg-red-50':'text-orange-600 bg-orange-50'} px-1.5 py-0.5 rounded text-[9px]"><i class="fa-solid fa-clock"></i> ${i.expStr}</div>
+                            </div>
+                        </div>
+                    `).join('') + `</div>`;
+            };
+
+            urgentContainer.innerHTML = `
+                <div class="bg-red-50 p-4 rounded-lg border border-red-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-red-100 pb-2">
+                        <h3 class="font-bold text-red-700 flex items-center gap-2"><i class="fa-solid fa-circle-xmark"></i> หนังสืออนุญาตหมดอายุแล้ว</h3>
+                        <span class="bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${expired.length} รายการ</span>
+                    </div>
+                    <div class="flex-1">${renderUrgentList(expired, 'ไม่มีหนังสืออนุญาตที่หมดอายุ', 'expired')}</div>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg border border-orange-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-orange-100 pb-2">
+                        <h3 class="font-bold text-orange-700 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> ใกล้หมดอายุ (ภายใน 30 วัน)</h3>
+                        <span class="bg-orange-500 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${soon.length} รายการ</span>
+                    </div>
+                    <div class="flex-1">${renderUrgentList(soon, 'ไม่มีหนังสืออนุญาตที่ใกล้หมดอายุ', 'soon')}</div>
+                </div>
+            `;
+
+            // Render Entry Lists (180 Days)
+            const renderEntryList = (list, emptyMsg, type) => {
+                let borderCls = type === 'overdue' ? 'border-red-100' : 'border-blue-100';
+                let textCls = type === 'overdue' ? 'text-red-800' : 'text-blue-800';
+                let hoverCls = type === 'overdue' ? 'hover:bg-red-50' : 'hover:bg-blue-50';
+                let badgeCls = type === 'overdue' ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50';
+
+                if(list.length === 0) return `<div class="text-xs text-gray-400 text-center py-4 border border-dashed rounded bg-white/50">${emptyMsg}</div>`;
+                return `<div class="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">` + 
+                    list.map(i => `
+                        <div class="text-[10px] flex justify-between items-center bg-white p-2 border ${borderCls} rounded shadow-sm ${hoverCls} cursor-pointer transition-colors" onclick="window.switchProject('${i.id}'); window.switchTab('detail');">
+                            <div class="flex-1 pr-2 overflow-hidden">
+                                <div class="font-bold ${textCls} truncate" title="${i.cName}">${i.cName} <span class="text-gray-500 font-normal">| ${i.rName}</span></div>
+                                <div class="text-[9px] text-gray-600 truncate mt-0.5"><i class="fa-solid fa-map-location-dot text-gray-400"></i> พื้นที่: ${i.area}</div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <div class="font-bold ${badgeCls} px-1.5 py-0.5 rounded text-[9px]"><i class="fa-solid ${type==='overdue'?'fa-circle-exclamation':'fa-clock'}"></i> กำหนดเข้าพื้นที่: ${i.limitStr}</div>
+                            </div>
+                        </div>
+                    `).join('') + `</div>`;
+            };
+
+            entryContainer.innerHTML = `
+                <div class="bg-red-50 p-4 rounded-lg border border-red-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-red-100 pb-2">
+                        <h3 class="font-bold text-red-700 flex items-center gap-2"><i class="fa-solid fa-circle-exclamation"></i> เลยกำหนดเข้าพื้นที่ (>180 วัน)</h3>
+                        <span class="bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${overdueEntry.length} รายการ</span>
+                    </div>
+                    <div class="flex-1">${renderEntryList(overdueEntry, 'ไม่มีรายการเลยกำหนด', 'overdue')}</div>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-blue-100 pb-2">
+                        <h3 class="font-bold text-blue-700 flex items-center gap-2"><i class="fa-solid fa-person-digging"></i> รอเข้าพื้นที่ (ยังไม่เกิน 180 วัน)</h3>
+                        <span class="bg-blue-500 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${pendingEntry.length} รายการ</span>
+                    </div>
+                    <div class="flex-1">${renderEntryList(pendingEntry, 'ไม่มีรายการรอเข้าพื้นที่', 'pending')}</div>
+                </div>
+            `;
+
+            // Render Grouped Areas
+            groupContainer.innerHTML = '';
+            const sortedAreas = Object.keys(byArea).sort();
+            
+            if (sortedAreas.length === 0) {
+                groupContainer.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 border border-dashed rounded bg-gray-50">ยังไม่มีข้อมูลหนังสืออนุญาตเข้าพื้นที่</div>`;
+                return;
+            }
+
+            sortedAreas.forEach(area => {
+                const list = byArea[area];
+                list.sort(sortExpFn);
+                
+                let listHtml = list.map(i => {
+                    // Badge วันหมดอายุหนังสือ
+                    let badgeCls = i.isExpired ? 'bg-red-50 text-red-600' : (!i.expDate ? 'bg-gray-100 text-gray-500' : 'bg-teal-50 text-teal-700');
+                    
+                    // Badge สถานะเข้าพื้นที่
+                    let entryBadge = '';
+                    if (i.hasPermitDate) {
+                        if (i.isEntered) {
+                            entryBadge = `<span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded ml-1 text-[8px] whitespace-nowrap"><i class="fa-solid fa-check"></i> เข้าแล้ว</span>`;
+                        } else {
+                            let cl = i.entryOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
+                            entryBadge = `<span class="${cl} px-1 py-0.5 rounded ml-1 text-[8px] whitespace-nowrap"><i class="fa-solid fa-person-digging"></i> กำหนดเข้าพื้นที่ ${i.entryLimitStr}</span>`;
+                        }
+                    }
+
+                    return `
+                    <div class="text-[10px] flex justify-between items-center bg-white p-2 border-b border-gray-100 last:border-0 hover:bg-teal-50 cursor-pointer transition-colors group" onclick="window.switchProject('${i.id}'); window.switchTab('detail');">
+                        <div class="flex-1 pr-2 overflow-hidden">
+                            <div class="font-semibold text-gray-800 group-hover:text-teal-800 truncate" title="${i.cName}">${i.cName} <span class="text-gray-500 font-normal">| ${i.rName}</span> ${entryBadge}</div>
+                            <div class="text-[9px] text-gray-500 truncate mt-1"><i class="fa-solid fa-file-lines text-gray-400"></i> เลขที่: ${i.docNo}</div>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <div class="font-bold ${badgeCls} px-1.5 py-0.5 rounded text-[9px] whitespace-nowrap"><i class="fa-solid ${i.isExpired?'fa-xmark':'fa-clock'}"></i> หมด ${i.expStr}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                groupContainer.innerHTML += `
+                    <div class="bg-white border border-teal-200 rounded-lg shadow-sm hover:shadow-md transition flex flex-col overflow-hidden">
+                        <div class="p-3 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
+                            <span class="text-teal-900 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-teal-600"></i> ${area}</span>
+                            <span class="bg-teal-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow-sm">${list.length} รายการ</span>
                         </div>
                         <div class="flex-1 overflow-y-auto max-h-[250px] custom-scrollbar bg-gray-50/30">
                             ${listHtml}
