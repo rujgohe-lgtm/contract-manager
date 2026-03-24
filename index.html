@@ -991,24 +991,71 @@
             }
         };
 
+        window.exportDetailCSV = function() {
+            if (!activeProjectId) return alert("กรุณาเลือกโครงการก่อนทำการ Export");
+            const p = projects.find(x => x.id === activeProjectId);
+            if (!p) return;
+            
+            let csv = "\uFEFF"; // BOM
+            // 1. Project Info
+            csv += `ข้อมูลโครงการ\n`;
+            csv += `ชื่อโครงการ,"${p.name || ''}"\n`;
+            csv += `เลขที่สัญญา,"${p.contractName || ''}"\n`;
+            csv += `ประเภทงบประมาณ,"${p.budgetType || ''}"\n`;
+            csv += `ปีงบประมาณ,"${p.fiscalYear || ''}"\n`;
+            csv += `ผู้ควบคุมงาน,"${p.supervisorName || ''}"\n`;
+            csv += `วงเงินทั้งสัญญา(บาท),"${p.contractAmount || ''}"\n`;
+            csv += `วันลงนามสัญญา,${p.signDate || ''}\n`;
+            csv += `วันที่เริ่มสัญญา,${p.startDate || ''}\n`;
+            csv += `เวลา(วัน),${p.duration || ''}\n`;
+            csv += `ขยาย(วัน),${p.extensionDays || ''}\n`;
+            csv += `เหตุผลความล่าช้า,"${p.delayReason || ''}"\n`;
+            csv += `\n`;
+
+            // 2. Routes
+            csv += `ข้อมูลเส้นทาง\n`;
+            csv += `ชื่อเส้นทาง,ระยะเวลา(วัน),เริ่มเดือนที่,ความยาวท่อ(ม.),มูลค่างานท่อ(บาท),พื้นที่ซ่อมผิว(ตร.ม.),มูลค่าซ่อมผิว(บาท),สถานที่ขออนุญาต,เลขที่หนังสือ,วันอนุญาต,วันหมดอายุ\n`;
+            (p.routesData || []).forEach(r => {
+                csv += `"${r.name || ''}",${r.duration || 0},${r.startMonth || 0},${r.pipeLength || 0},${r.pipeValue || 0},${r.repairArea || 0},${r.repairValue || 0},"${r.permitArea || ''}","${r.permitDocNo || ''}",${r.permitIssueDate || ''},${r.permitExpiryDate || ''}\n`;
+            });
+            csv += `\n`;
+
+            // 3. WBS
+            csv += `แผนงานและผลงาน (WBS)\n`;
+            csv += `งานย่อย,น้ำหนัก(%),ทำได้จริง(%)\n`;
+            (p.tasks || []).forEach(t => {
+                csv += `"${t.name || ''}",${t.weight || 0},${t.actualProgress || 0}\n`;
+            });
+            csv += `\n`;
+
+            // 4. Installments
+            csv += `สรุปการเบิกงวดงาน\n`;
+            csv += `งวดที่,ไม่หักเงินล่วงหน้า(15%),หักเงินล่วงหน้า(บาท),งวดสุดท้าย\n`;
+            (p.installments || []).forEach((inst, idx) => {
+                csv += `${idx + 1},${inst.noAdvance ? 'ใช่' : 'ไม่'},${inst.advanceAmt || 0},${inst.isFinal ? 'ใช่' : 'ไม่'}\n`;
+            });
+
+            const link = document.createElement("a"); 
+            link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+            link.download = `Project_Detail_${p.contractName || 'Project'}_${new Date().toISOString().split('T')[0]}.csv`; 
+            link.click();
+        };
+
 
         // --- INIT ---
         window.onload = async function() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (e) {
+                    signInWithCustomToken(auth, __initial_auth_token).catch((e) => {
                         console.warn("Custom token mismatch, falling back to anonymous sign-in.", e);
-                        await signInAnonymously(auth);
-                    }
+                        signInAnonymously(auth).catch(err => console.error("Anonymous auth failed", err));
+                    });
                 } else {
-                    await signInAnonymously(auth);
+                    signInAnonymously(auth).catch(err => console.error("Anonymous auth failed", err));
                 }
             } catch (error) {
-                console.error("Auth Error:", error);
+                console.error("Auth setup error:", error);
                 document.getElementById('connectionStatus').innerText = "สถานะ: เชื่อมต่อล้มเหลว";
-                return;
             }
 
             onAuthStateChanged(auth, (user) => {
@@ -1870,7 +1917,7 @@
                                 <div class="bg-blue-50 p-1 rounded border border-blue-100 mt-1">
                                     <div class="flex justify-between items-center mb-1 border-b border-blue-200 pb-0.5">
                                         <span class="text-[8px] font-bold text-blue-800">ประวัติผลงานจริง (ม.)</span>
-                                        <button type="button" onclick="window.addRouteHistory('${r.id}', 'pipe')" class="text-[8px] bg-blue-50 text-white px-1.5 py-0.5 rounded shadow-sm hover:bg-blue-600 transition"><i class="fas fa-plus"></i> เพิ่ม</button>
+                                        <button type="button" onclick="window.addRouteHistory('${r.id}', 'pipe')" class="text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded shadow hover:bg-blue-700 hover:shadow-md transition-all font-bold"><i class="fas fa-plus"></i> เพิ่ม</button>
                                     </div>
                                     <div class="space-y-0.5 mb-1 max-h-24 overflow-y-auto custom-scrollbar pr-1">
                                         ${pipeHistHtml || '<div class="text-[8px] text-gray-400 text-center italic py-1">ไม่มีข้อมูลประวัติ</div>'}
@@ -1891,7 +1938,7 @@
                                 <div class="bg-orange-50 p-1 rounded border border-orange-100 mt-1">
                                     <div class="flex justify-between items-center mb-1 border-b border-orange-200 pb-0.5">
                                         <span class="text-[8px] font-bold text-orange-800">ประวัติผลงานจริง (ตร.ม.)</span>
-                                        <button type="button" onclick="window.addRouteHistory('${r.id}', 'repair')" class="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600 transition"><i class="fas fa-plus"></i> เพิ่ม</button>
+                                        <button type="button" onclick="window.addRouteHistory('${r.id}', 'repair')" class="text-[9px] bg-orange-500 text-white px-2 py-0.5 rounded shadow hover:bg-orange-600 hover:shadow-md transition-all font-bold"><i class="fas fa-plus"></i> เพิ่ม</button>
                                     </div>
                                     <div class="space-y-0.5 mb-1 max-h-24 overflow-y-auto custom-scrollbar pr-1">
                                         ${repairHistHtml || '<div class="text-[8px] text-gray-400 text-center italic py-1">ไม่มีข้อมูลประวัติ</div>'}
@@ -3317,6 +3364,60 @@
             });
             const link = document.createElement("a"); link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
             link.download = `Summary_W124_${new Date().toISOString().split('T')[0]}.csv`; link.click();
+        };
+
+        window.exportDetailCSV = function() {
+            if (!activeProjectId) return alert("กรุณาเลือกโครงการก่อนทำการ Export");
+            const p = projects.find(x => x.id === activeProjectId);
+            if (!p) return;
+            
+            let csv = "\uFEFF"; // ใส่ BOM เพื่อให้ Excel อ่านภาษาไทยได้
+            
+            // 1. ข้อมูลโครงการ
+            csv += `ข้อมูลโครงการ\n`;
+            csv += `ชื่อโครงการ,"${p.name || ''}"\n`;
+            csv += `เลขที่สัญญา,"${p.contractName || ''}"\n`;
+            csv += `ประเภทงบประมาณ,"${p.budgetType || ''}"\n`;
+            csv += `ปีงบประมาณ,"${p.fiscalYear || ''}"\n`;
+            csv += `ผู้ควบคุมงาน,"${p.supervisorName || ''}"\n`;
+            csv += `วงเงินทั้งสัญญา(บาท),"${(p.contractAmount || '').replace(/,/g, '')}"\n`;
+            csv += `วันลงนามสัญญา,${p.signDate || ''}\n`;
+            csv += `วันที่เริ่มสัญญา,${p.startDate || ''}\n`;
+            csv += `เวลา(วัน),${p.duration || ''}\n`;
+            csv += `ขยาย(วัน),${p.extensionDays || ''}\n`;
+            csv += `เหตุผลความล่าช้า,"${p.delayReason || ''}"\n`;
+            csv += `\n`;
+
+            // 2. ข้อมูลเส้นทาง
+            csv += `ข้อมูลเส้นทาง\n`;
+            csv += `ชื่อเส้นทาง,ระยะเวลา(วัน),เริ่มเดือนที่,ความยาวท่อ(ม.),มูลค่างานท่อ(บาท),พื้นที่ซ่อมผิว(ตร.ม.),มูลค่าซ่อมผิว(บาท),สถานที่ขออนุญาต,เลขที่หนังสือ,วันอนุญาต,วันหมดอายุ\n`;
+            (p.routesData || []).forEach(r => {
+                csv += `"${r.name || ''}",${r.duration || 0},${r.startMonth || 0},${r.pipeLength || 0},${r.pipeValue || 0},${r.repairArea || 0},${r.repairValue || 0},"${r.permitArea || ''}","${r.permitDocNo || ''}",${r.permitIssueDate || ''},${r.permitExpiryDate || ''}\n`;
+            });
+            csv += `\n`;
+
+            // 3. แผนงาน (WBS)
+            csv += `แผนงานและผลงาน (WBS)\n`;
+            csv += `งานย่อย,น้ำหนัก(%),ทำได้จริง(%)\n`;
+            (p.tasks || []).forEach(t => {
+                csv += `"${t.name || ''}",${t.weight || 0},${t.actualProgress || 0}\n`;
+            });
+            csv += `\n`;
+
+            // 4. การเบิกงวดงาน
+            csv += `สรุปการเบิกงวดงาน\n`;
+            csv += `งวดที่,ไม่หักเงินล่วงหน้า(15%),หักเงินล่วงหน้า(บาท),งวดสุดท้าย\n`;
+            (p.installments || []).forEach((inst, idx) => {
+                csv += `${idx + 1},${inst.noAdvance ? 'ใช่' : 'ไม่'},${inst.advanceAmt || 0},${inst.isFinal ? 'ใช่' : 'ไม่'}\n`;
+            });
+
+            // สร้าง Link ดาวน์โหลด
+            const link = document.createElement("a"); 
+            link.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+            // แปลงเครื่องหมายทับ (/) ในชื่อสัญญาเป็นขีด (-) เพื่อป้องกันปัญหาการบันทึกไฟล์
+            let safeContractName = (p.contractName || 'Project').replace(/\//g, '-');
+            link.download = `Project_Detail_${safeContractName}_${new Date().toISOString().split('T')[0]}.csv`; 
+            link.click();
         };
 
     </script>
